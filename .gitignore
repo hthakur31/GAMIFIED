@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
+
+# Byte-compiled / distribution
+build/
+dist/
+*.egg-info/
+
+# Django / Python specific
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+*.log
+
+# Environment variables / secrets
+.env
+.env.*
+.secrets/
+credentials.json
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Node
+node_modules/
