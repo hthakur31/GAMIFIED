@@ -1,0 +1,297 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block shape_game_css %}
+<style>
+.admin-nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-nav .nav-link:hover,
+.admin-nav .nav-link.active {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.template-card {
+    transition: transform 0.2s ease;
+}
+
+.template-card:hover {
+    transform: translateY(-2px);
+}
+
+.grid-mini-preview {
+    width: 80px;
+    height: 80px;
+    display: grid;
+    gap: 1px;
+    background-color: #333;
+    border-radius: 0.25rem;
+    padding: 2px;
+}
+
+.grid-mini-cell {
+    background-color: #f8f9fa;
+    border-radius: 1px;
+}
+
+.grid-mini-cell.question {
+    background-color: #fff3cd;
+}
+
+.grid-mini-cell.fixed {
+    background-color: #d1ecf1;
+}
+</style>
+{% endblock %}
+
+{% block shape_game_content %}
+<div class="admin-nav">
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark p-0">
+            <span class="navbar-brand mb-0 h1">🎮 Game Admin Panel</span>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'games:manage_shapes' %}">Shapes</a>
+                <a class="nav-link active" href="{% url 'games:manage_templates' %}">Templates</a>
+                <a class="nav-link" href="{% url 'games:manage_shape_games' %}">Games</a>
+                <a class="nav-link" href="/admin/">Django Admin</a>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-th"></i> {{ page_title }}</h2>
+                <div class="btn-group">
+                    <a href="{% url 'games:template_builder' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Visual Builder
+                    </a>
+                    <a href="{% url 'games:template_create' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-code"></i> JSON Editor
+                    </a>
+                </div>
+            </div>
+
+            {% if templates %}
+                <div class="row">
+                    {% for template in templates %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card template-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="grid-mini-preview me-3" id="preview-{{ template.id }}">
+                                            <!-- Mini grid preview will be generated here -->
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h5 class="card-title mb-1">{{ template.name }}</h5>
+                                            <div class="text-muted small">
+                                                <span class="badge bg-info me-1">{{ template.grid_size }}x{{ template.grid_size }}</span>
+                                                <span class="badge bg-secondary">{{ template.difficulty }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if template.description %}
+                                        <p class="card-text small text-muted mb-3">{{ template.description|truncatewords:15 }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="row text-center small text-muted mb-3">
+                                        <div class="col">
+                                            <strong>Questions</strong><br>
+                                            {{ template.question_cell_count }}
+                                        </div>
+                                        <div class="col">
+                                            <strong>Created</strong><br>
+                                            {{ template.created_at|date:"M d" }}
+                                        </div>
+                                        <div class="col">
+                                            <strong>Status</strong><br>
+                                            {% if template.is_active %}
+                                                <span class="text-success">Active</span>
+                                            {% else %}
+                                                <span class="text-danger">Inactive</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{% url 'games:template_edit' template.id %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button class="btn btn-outline-info btn-sm" 
+                                                onclick="previewTemplate({{ template.id }})">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-th fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No templates available</h4>
+                    <p class="text-muted">Create your first grid template!</p>
+                    <div class="btn-group">
+                        <a href="{% url 'games:template_builder' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Visual Builder
+                        </a>
+                        <a href="{% url 'games:template_create' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-code"></i> JSON Editor
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="templatePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Template Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="template-preview-content">
+                    <!-- Preview content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template data from Django
+    const templates = [
+        {% for template in templates %}
+        {
+            id: {{ template.id }},
+            name: "{{ template.name|escapejs }}",
+            grid_size: {{ template.grid_size }},
+            grid_data: {{ template.grid_data|safe }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Generate mini previews for each template
+    templates.forEach(template => {
+        generateMiniPreview(template);
+    });
+
+    function generateMiniPreview(template) {
+        const previewContainer = document.getElementById(`preview-${template.id}`);
+        if (!previewContainer) return;
+
+        const gridSize = template.grid_size;
+        const gridData = template.grid_data;
+        
+        previewContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        previewContainer.innerHTML = '';
+
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-mini-cell';
+                
+                const cellValue = gridData[row][col];
+                if (cellValue === '?') {
+                    cell.classList.add('question');
+                } else if (cellValue === 'fixed') {
+                    cell.classList.add('fixed');
+                }
+                
+                previewContainer.appendChild(cell);
+            }
+        }
+    }
+
+    // Template preview function
+    window.previewTemplate = function(templateId) {
+        const template = templates.find(t => t.id === templateId);
+        if (!template) return;
+
+        const modalContent = document.getElementById('template-preview-content');
+        
+        // Create full-size preview
+        const gridContainer = document.createElement('div');
+        gridContainer.style.display = 'grid';
+        gridContainer.style.gridTemplateColumns = `repeat(${template.grid_size}, 1fr)`;
+        gridContainer.style.gap = '2px';
+        gridContainer.style.backgroundColor = '#333';
+        gridContainer.style.padding = '10px';
+        gridContainer.style.borderRadius = '0.5rem';
+        gridContainer.style.justifyContent = 'center';
+
+        for (let row = 0; row < template.grid_size; row++) {
+            for (let col = 0; col < template.grid_size; col++) {
+                const cell = document.createElement('div');
+                cell.style.width = '30px';
+                cell.style.height = '30px';
+                cell.style.backgroundColor = 'white';
+                cell.style.border = '1px solid #dee2e6';
+                cell.style.display = 'flex';
+                cell.style.alignItems = 'center';
+                cell.style.justifyContent = 'center';
+                cell.style.fontWeight = 'bold';
+                cell.style.borderRadius = '2px';
+                
+                const cellValue = template.grid_data[row][col];
+                if (cellValue === '?') {
+                    cell.style.backgroundColor = '#fff3cd';
+                    cell.style.borderColor = '#ffc107';
+                    cell.style.color = '#856404';
+                    cell.textContent = '?';
+                } else if (cellValue === 'fixed') {
+                    cell.style.backgroundColor = '#d1ecf1';
+                    cell.style.borderColor = '#bee5eb';
+                    cell.style.color = '#0c5460';
+                    cell.textContent = '●';
+                } else {
+                    cell.style.backgroundColor = '#f8f9fa';
+                    cell.style.color = '#6c757d';
+                    cell.textContent = '∅';
+                }
+                
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        modalContent.innerHTML = `
+            <div class="text-center mb-3">
+                <h4>${template.name}</h4>
+                <p class="text-muted">Grid Size: ${template.grid_size}x${template.grid_size}</p>
+            </div>
+        `;
+        modalContent.appendChild(gridContainer);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
+        modal.show();
+    };
+});
+</script>
+{% endblock %}

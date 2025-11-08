@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Puzzles - GeoSudoku{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-puzzle-piece"></i> Available Puzzles</h2>
+    {% if user.role == 'ADMIN' %}
+    <a href="{% url 'games:create_puzzle' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create New Puzzle
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="difficulty" class="form-label">Difficulty Level</label>
+                <select class="form-select" id="difficulty" name="difficulty">
+                    <option value="">All Difficulties</option>
+                    <option value="easy" {% if selected_difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                    <option value="medium" {% if selected_difficulty == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="hard" {% if selected_difficulty == 'hard' %}selected{% endif %}>Hard</option>
+                    <option value="expert" {% if selected_difficulty == 'expert' %}selected{% endif %}>Expert</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'games:puzzle_list' %}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Puzzles Grid -->
+{% if puzzles %}
+    <div class="row">
+        {% for puzzle in puzzles %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Puzzle #{{ puzzle.id }}</span>
+                        {% if puzzle.difficulty == 'easy' %}
+                            <span class="badge bg-success">Easy</span>
+                        {% elif puzzle.difficulty == 'medium' %}
+                            <span class="badge bg-warning">Medium</span>
+                        {% elif puzzle.difficulty == 'hard' %}
+                            <span class="badge bg-danger">Hard</span>
+                        {% else %}
+                            <span class="badge bg-dark">Expert</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Created:</small><br>
+                                <span>{{ puzzle.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Creator:</small><br>
+                                <span>
+                                    {% if puzzle.created_by %}
+                                        {{ puzzle.created_by.username }}
+                                    {% else %}
+                                        System
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Mini preview of puzzle (simplified) -->
+                        <div class="mini-sudoku-preview mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-globe-americas fa-2x text-primary"></i>
+                                <div class="small text-muted mt-1">Geographic Regions</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Game Status -->
+                        {% with user_session=puzzle.game_sessions.all|first %}
+                            {% if user_session %}
+                                <div class="alert alert-info alert-sm mb-3">
+                                    {% if user_session.status == 'in_progress' %}
+                                        <i class="fas fa-play"></i> In Progress
+                                        <div class="small">Score: {{ user_session.score }}</div>
+                                    {% elif user_session.status == 'completed' %}
+                                        <i class="fas fa-check"></i> Completed
+                                        <div class="small">Score: {{ user_session.score }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-grid">
+                            {% with user_session=puzzle.game_sessions.all|first %}
+                                {% if user_session and user_session.status == 'in_progress' %}
+                                    <a href="{% url 'games:play_puzzle' puzzle.id %}" class="btn btn-success">
+                                        <i class="fas fa-play"></i> Continue Game
+                                    </a>
+                                {% elif user_session and user_session.status == 'completed' %}
+                                    <a href="{% url 'games:play_puzzle' puzzle.id %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View Solution
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'games:play_puzzle' puzzle.id %}" class="btn btn-primary">
+                                        <i class="fas fa-play"></i> Start Game
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination would go here if needed -->
+    
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4>No puzzles found</h4>
+        {% if selected_difficulty %}
+            <p class="text-muted">No puzzles found for the selected difficulty level.</p>
+            <a href="{% url 'games:puzzle_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Show All Puzzles
+            </a>
+        {% else %}
+            <p class="text-muted">There are no puzzles available yet.</p>
+            {% if user.role == 'ADMIN' %}
+            <a href="{% url 'games:create_puzzle' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create the First Puzzle
+            </a>
+            {% else %}
+            <p class="text-muted">Please wait for admin to create puzzles.</p>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.mini-sudoku-preview {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+.alert-sm {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

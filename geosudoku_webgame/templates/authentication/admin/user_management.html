@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+    .user-management {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding-top: 20px;
+    }
+    
+    .management-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    .user-row {
+        border-bottom: 1px solid #eee;
+        padding: 15px 0;
+        transition: background-color 0.3s ease;
+    }
+    
+    .user-row:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    
+    .user-status {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-blocked {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .role-badge {
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+    
+    .role-admin {
+        background-color: #e1f5fe;
+        color: #01579b;
+    }
+    
+    .role-user {
+        background-color: #f3e5f5;
+        color: #4a148c;
+    }
+    
+    .filter-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .btn-admin {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 20px;
+        padding: 8px 15px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-admin:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .action-buttons .btn {
+        margin: 0 2px;
+        border-radius: 15px;
+    }
+    
+    .bulk-actions {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    
+    .pagination-wrapper {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-management">
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="text-white"><i class="bi bi-people"></i> User Management</h1>
+            <p class="text-light">Manage all registered users, permissions, and access controls</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <form method="GET" class="row align-items-end">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search Users</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Username, email, name...">
+                </div>
+                <div class="col-md-2">
+                    <label for="role" class="form-label">Role</label>
+                    <select class="form-select" id="role" name="role">
+                        <option value="">All Roles</option>
+                        {% for value, label in role_choices %}
+                        <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="blocked" {% if status_filter == 'blocked' %}selected{% endif %}>Blocked</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="sort" class="form-label">Sort By</label>
+                    <select class="form-select" id="sort" name="sort">
+                        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                        <option value="username" {% if sort_by == 'username' %}selected{% endif %}>Username A-Z</option>
+                        <option value="-username" {% if sort_by == '-username' %}selected{% endif %}>Username Z-A</option>
+                        <option value="-total_games" {% if sort_by == '-total_games' %}selected{% endif %}>Most Active</option>
+                        <option value="-last_login" {% if sort_by == '-last_login' %}selected{% endif %}>Recently Active</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-admin">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <a href="{% url 'authentication:user_management' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bulk-actions" id="bulkActions">
+            <div class="d-flex align-items-center">
+                <span class="me-3"><strong id="selectedCount">0</strong> users selected</span>
+                <button type="button" class="btn btn-warning btn-sm me-2" onclick="bulkAction('block')">
+                    <i class="bi bi-lock"></i> Block Selected
+                </button>
+                <button type="button" class="btn btn-success btn-sm me-2" onclick="bulkAction('unblock')">
+                    <i class="bi bi-unlock"></i> Unblock Selected
+                </button>
+                <button type="button" class="btn btn-danger btn-sm me-2" onclick="bulkAction('delete')">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                    <i class="bi bi-x"></i> Clear Selection
+                </button>
+            </div>
+        </div>
+
+        <!-- User List -->
+        <div class="management-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list"></i> Users ({{ users.paginator.count }} total)
+                    </h5>
+                    <div>
+                        <input type="checkbox" id="selectAll" class="form-check-input me-2">
+                        <label for="selectAll" class="form-check-label me-3">Select All</label>
+                        <a href="{% url 'authentication:admin_dashboard' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="50"></th>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Activity</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr class="user-row">
+                                <td>
+                                    <input type="checkbox" class="form-check-input user-checkbox" 
+                                           value="{{ user.id }}" data-username="{{ user.username }}">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-3">
+                                            {{ user.username|slice:":1"|upper }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">{{ user.username }}</h6>
+                                            <small class="text-muted">
+                                                {% if user.first_name or user.last_name %}
+                                                {{ user.first_name }} {{ user.last_name }}<br>
+                                                {% endif %}
+                                                {{ user.email }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="role-badge {% if user.role == 'ADMIN' %}role-admin{% else %}role-user{% endif %}">
+                                        {% if user.role == 'ADMIN' %}
+                                        <i class="bi bi-shield-check"></i> Admin
+                                        {% else %}
+                                        <i class="bi bi-person"></i> User
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="user-status {% if user.is_active %}status-active{% else %}status-blocked{% endif %}">
+                                        {% if user.is_active %}
+                                        <i class="bi bi-check-circle"></i> Active
+                                        {% else %}
+                                        <i class="bi bi-x-circle"></i> Blocked
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ user.total_games }} games<br>
+                                        {{ user.completed_games }} completed
+                                        {% if user.last_login %}
+                                        <br>Last: {{ user.last_login|timesince }} ago
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user.created_at|date:"M d, Y" }}</small>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{% url 'authentication:user_detail' user.id %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'authentication:edit_user' user.id %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit User">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if user != request.user %}
+                                        <button class="btn btn-sm {% if user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
+                                                onclick="toggleUserStatus({{ user.id }}, '{{ user.username }}')" 
+                                                title="{% if user.is_active %}Block User{% else %}Unblock User{% endif %}">
+                                            {% if user.is_active %}
+                                            <i class="bi bi-lock"></i>
+                                            {% else %}
+                                            <i class="bi bi-unlock"></i>
+                                            {% endif %}
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4 class="text-muted mt-3">No users found</h4>
+                    <p class="text-muted">Try adjusting your search criteria.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if users.has_other_pages %}
+        <div class="pagination-wrapper">
+            <nav aria-label="User pagination">
+                <ul class="pagination justify-content-center">
+                    {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">{{ users.number }} of {{ users.paginator.num_pages }}</span>
+                    </li>
+
+                    {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// User selection and bulk actions
+let selectedUsers = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+
+    // Select all functionality
+    selectAllCheckbox.addEventListener('change', function() {
+        userCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelectedUsers();
+    });
+
+    // Individual checkbox changes
+    userCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedUsers);
+    });
+
+    function updateSelectedUsers() {
+        selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => ({
+            id: cb.value,
+            username: cb.dataset.username
+        }));
+
+        selectedCount.textContent = selectedUsers.length;
+        bulkActions.style.display = selectedUsers.length > 0 ? 'block' : 'none';
+
+        // Update select all checkbox
+        const checkedCount = selectedUsers.length;
+        const totalCount = userCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        selectAllCheckbox.checked = checkedCount === totalCount && totalCount > 0;
+    }
+});
+
+function clearSelection() {
+    document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    selectedUsers = [];
+    document.getElementById('bulkActions').style.display = 'none';
+}
+
+function bulkAction(action) {
+    if (selectedUsers.length === 0) {
+        alert('Please select users first.');
+        return;
+    }
+
+    const actionNames = {
+        'block': 'block',
+        'unblock': 'unblock',
+        'delete': 'delete'
+    };
+
+    const confirmMessage = `Are you sure you want to ${actionNames[action]} ${selectedUsers.length} user(s)?`;
+    if (!confirm(confirmMessage)) return;
+
+    const formData = new FormData();
+    formData.append('action', action);
+    selectedUsers.forEach(user => formData.append('user_ids', user.id));
+
+    fetch('{% url "authentication:bulk_user_actions" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+function toggleUserStatus(userId, username) {
+    if (!confirm(`Are you sure you want to toggle the status of user "${username}"?`)) {
+        return;
+    }
+
+    fetch(`/auth/admin/users/${userId}/toggle-status/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

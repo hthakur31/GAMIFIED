@@ -1,0 +1,747 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block shape_game_css %}
+<style>
+.admin-nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-nav .nav-link:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.grid-builder {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.grid-container {
+    display: grid;
+    gap: 2px;
+    background-color: #333;
+    padding: 10px;
+    border-radius: 0.5rem;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.grid-cell {
+    width: 40px;
+    height: 40px;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.grid-cell:hover {
+    background-color: #e3f2fd;
+    transform: scale(1.05);
+}
+
+.grid-cell.question {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.grid-cell.fixed {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.grid-cell.empty {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+.cell-type-selector {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+}
+
+.cell-type-option {
+    padding: 0.5rem 1rem;
+    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cell-type-option.active {
+    border-color: #007bff;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.grid-stats {
+    background-color: #e3f2fd;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.size-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.size-control input[type="range"] {
+    flex: 1;
+}
+
+.grid-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.answer-panel {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.shape-option {
+    display: inline-block;
+    margin: 0.25rem;
+    padding: 0.5rem;
+    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.shape-option:hover {
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.shape-option.selected {
+    border-color: #28a745;
+    background-color: #d4edda;
+}
+
+.shape-svg {
+    width: 30px;
+    height: 30px;
+    display: block;
+}
+
+.answer-mode {
+    background-color: #e8f5e8 !important;
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+</style>
+{% endblock %}
+
+{% block shape_game_content %}
+<div class="admin-nav">
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark p-0">
+            <span class="navbar-brand mb-0 h1">🎮 Game Admin Panel</span>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'games:manage_shapes' %}">Shapes</a>
+                <a class="nav-link active" href="{% url 'games:manage_templates' %}">Templates</a>
+                <a class="nav-link" href="{% url 'games:manage_shape_games' %}">Games</a>
+                <a class="nav-link" href="/admin/">Django Admin</a>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <a href="{% url 'games:manage_templates' %}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <h2><i class="fas fa-th"></i> {{ page_title }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Grid Builder -->
+        <div class="col-lg-8">
+            <div class="grid-builder">
+                <h4><i class="fas fa-grid-3x3"></i> Grid Editor</h4>
+                
+                <!-- Size Control -->
+                <div class="size-control">
+                    <label for="grid-size-selector"><strong>Grid Size:</strong></label>
+                    <div class="btn-group" role="group" id="grid-size-selector">
+                        <input type="radio" class="btn-check" name="grid-size" id="size-4x4" value="4" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="size-4x4">4x4</label>
+                        
+                        <input type="radio" class="btn-check" name="grid-size" id="size-5x5" value="5" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="size-5x5">5x5</label>
+                    </div>
+                    <span id="size-display" class="badge bg-primary ms-2">5x5</span>
+                </div>
+
+                <!-- Cell Type Selector -->
+                <div class="cell-type-selector">
+                    <div class="cell-type-option active" data-type="question">
+                        <div class="grid-cell question">?</div>
+                        <small>Question Cell</small>
+                    </div>
+                    <div class="cell-type-option" data-type="empty">
+                        <div class="grid-cell empty">∅</div>
+                        <small>Empty Cell</small>
+                    </div>
+                    <!-- Dynamic shapes will be loaded here -->
+                    <div id="shapes-container">
+                        <!-- Shapes will be loaded via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Answer Definition Panel (appears when question cells are selected) -->
+                <div id="answer-panel" class="answer-panel" style="display: none;">
+                    <h6><i class="fas fa-key"></i> Define Answers for Question Cells</h6>
+                    <div class="alert alert-info small">
+                        Click on question cells in the grid to define their correct answers.
+                    </div>
+                    <div id="answer-shapes-container">
+                        <!-- Available shapes for answers -->
+                    </div>
+                </div>
+
+                <!-- Grid Actions -->
+                <div class="grid-actions">
+                    <button class="btn btn-outline-secondary btn-sm" id="clear-grid">
+                        <i class="fas fa-eraser"></i> Clear All
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" id="fill-questions">
+                        <i class="fas fa-question"></i> Fill with Questions
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" id="random-pattern">
+                        <i class="fas fa-dice"></i> Random Pattern
+                    </button>
+                </div>
+
+                <!-- Grid Stats -->
+                <div class="grid-stats">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <strong id="question-count">0</strong><br>
+                            <small>Question Cells</small>
+                        </div>
+                        <div class="col-4">
+                            <strong id="empty-count">0</strong><br>
+                            <small>Empty Cells</small>
+                        </div>
+                        <div class="col-4">
+                            <strong id="fixed-count">0</strong><br>
+                            <small>Fixed Cells</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Container -->
+                <div id="grid-container" class="grid-container">
+                    <!-- Grid cells will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-save"></i> Save Template</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="template-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <strong>Template Name</strong>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <strong>Description</strong>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.difficulty.id_for_label }}" class="form-label">
+                                <strong>Difficulty</strong>
+                            </label>
+                            {{ form.difficulty }}
+                            {% if form.difficulty.errors %}
+                                <div class="text-danger small">{{ form.difficulty.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Hidden fields -->
+                        {{ form.grid_size }}
+                        {{ form.grid_data }}
+
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Instructions:</strong><br>
+                                • Click cells to change their type<br>
+                                • Question cells (?) are where players place shapes<br>
+                                • Empty cells are background<br>
+                                • Fixed cells are pre-filled elements
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="save-template">
+                                <i class="fas fa-save"></i> Save Template
+                            </button>
+                            <a href="{% url 'games:manage_templates' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Preview Card -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-code"></i> Grid Data Preview</h6>
+                </div>
+                <div class="card-body">
+                    <pre id="grid-json" class="small bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto;">
+                    {
+                        "grid_data": []
+                    }
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentGridSize = 5; // Default to 5x5
+    let currentCellType = 'question';
+    let gridData = [];
+    let answerData = {}; // Store answers for question cells
+    let availableShapes = [];
+    let selectedAnswerShape = null;
+    let answerMode = false;
+
+    const gridContainer = document.getElementById('grid-container');
+    const gridSizeRadios = document.querySelectorAll('input[name="grid-size"]');
+    const sizeDisplay = document.getElementById('size-display');
+    const gridSizeInput = document.getElementById('{{ form.grid_size.id_for_label }}');
+    const gridDataInput = document.getElementById('{{ form.grid_data.id_for_label }}');
+    const gridJsonPreview = document.getElementById('grid-json');
+    const shapesContainer = document.getElementById('shapes-container');
+    const answerPanel = document.getElementById('answer-panel');
+    const answerShapesContainer = document.getElementById('answer-shapes-container');
+
+    // Cell type options
+    const cellTypeOptions = document.querySelectorAll('.cell-type-option');
+    
+    // Load available shapes from server
+    async function loadShapes() {
+        try {
+            const response = await fetch('/api/shapes/');
+            availableShapes = await response.json();
+            renderShapeOptions();
+            renderAnswerShapes();
+        } catch (error) {
+            console.error('Failed to load shapes:', error);
+            // Fallback shapes
+            availableShapes = [
+                {id: 1, name: 'Green Circle', shape_type: 'circle', color: '#28a745', svg_data: '<circle cx="15" cy="15" r="12" fill="currentColor"/>'},
+                {id: 2, name: 'Blue Triangle', shape_type: 'triangle', color: '#007bff', svg_data: '<polygon points="15,3 27,23 3,23" fill="currentColor"/>'},
+                {id: 3, name: 'Red Square', shape_type: 'square', color: '#dc3545', svg_data: '<rect x="3" y="3" width="24" height="24" fill="currentColor"/>'}
+            ];
+            renderShapeOptions();
+            renderAnswerShapes();
+        }
+    }
+
+    // Render shape options for grid building
+    function renderShapeOptions() {
+        shapesContainer.innerHTML = '';
+        availableShapes.forEach(shape => {
+            const option = document.createElement('div');
+            option.className = 'cell-type-option';
+            option.dataset.type = 'shape';
+            option.dataset.shapeId = shape.id;
+            
+            option.innerHTML = `
+                <div class="grid-cell fixed">
+                    <svg width="20" height="20" viewBox="0 0 30 30" style="color: ${shape.color}">
+                        ${shape.svg_data}
+                    </svg>
+                </div>
+                <small>${shape.name}</small>
+            `;
+            
+            option.addEventListener('click', function() {
+                cellTypeOptions.forEach(opt => opt.classList.remove('active'));
+                document.querySelectorAll('.cell-type-option[data-type="shape"]').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                currentCellType = 'shape';
+                currentShapeId = shape.id;
+                answerMode = false;
+                document.body.classList.remove('answer-mode');
+            });
+            
+            shapesContainer.appendChild(option);
+        });
+    }
+
+    // Render shapes for answer definition
+    function renderAnswerShapes() {
+        answerShapesContainer.innerHTML = '';
+        availableShapes.forEach(shape => {
+            const option = document.createElement('div');
+            option.className = 'shape-option';
+            option.dataset.shapeId = shape.id;
+            
+            option.innerHTML = `
+                <svg class="shape-svg" viewBox="0 0 30 30" style="color: ${shape.color}" title="${shape.name}">
+                    ${shape.svg_data}
+                </svg>
+            `;
+            
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.shape-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedAnswerShape = shape.id;
+                enterAnswerMode();
+            });
+            
+            answerShapesContainer.appendChild(option);
+        });
+    }
+
+    function enterAnswerMode() {
+        answerMode = true;
+        document.body.classList.add('answer-mode');
+        answerPanel.style.display = 'block';
+    }
+
+    function exitAnswerMode() {
+        answerMode = false;
+        document.body.classList.remove('answer-mode');
+        selectedAnswerShape = null;
+        document.querySelectorAll('.shape-option').forEach(opt => opt.classList.remove('selected'));
+    }
+
+    // Initialize grid
+    function initializeGrid(size) {
+        currentGridSize = size;
+        gridData = Array(size).fill().map(() => Array(size).fill(0));
+        answerData = {}; // Reset answers
+        renderGrid();
+        updateStats();
+        updatePreview();
+    }
+
+    // Render grid
+    function renderGrid() {
+        gridContainer.innerHTML = '';
+        gridContainer.style.gridTemplateColumns = `repeat(${currentGridSize}, 1fr)`;
+        
+        for (let row = 0; row < currentGridSize; row++) {
+            for (let col = 0; col < currentGridSize; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                
+                const cellValue = gridData[row][col];
+                const cellKey = `${row}-${col}`;
+                
+                if (cellValue === '?') {
+                    cell.classList.add('question');
+                    cell.textContent = '?';
+                    
+                    // Show answer if defined
+                    if (answerData[cellKey]) {
+                        const shape = availableShapes.find(s => s.id == answerData[cellKey]);
+                        if (shape) {
+                            cell.innerHTML = `
+                                <div style="position: relative;">
+                                    <span style="position: absolute; top: -5px; left: -5px; font-size: 0.7em; color: #666;">?</span>
+                                    <svg width="16" height="16" viewBox="0 0 30 30" style="color: ${shape.color}">
+                                        ${shape.svg_data}
+                                    </svg>
+                                </div>
+                            `;
+                        }
+                    }
+                } else if (typeof cellValue === 'object' && cellValue.shapeId) {
+                    // Fixed shape cell
+                    cell.classList.add('fixed');
+                    const shape = availableShapes.find(s => s.id == cellValue.shapeId);
+                    if (shape) {
+                        cell.innerHTML = `
+                            <svg width="20" height="20" viewBox="0 0 30 30" style="color: ${shape.color}">
+                                ${shape.svg_data}
+                            </svg>
+                        `;
+                    }
+                } else {
+                    cell.classList.add('empty');
+                    cell.textContent = '∅';
+                }
+                
+                cell.addEventListener('click', function() {
+                    if (answerMode && cellValue === '?' && selectedAnswerShape) {
+                        // Define answer for question cell
+                        answerData[cellKey] = selectedAnswerShape;
+                        renderGrid();
+                        updatePreview();
+                        exitAnswerMode();
+                    } else {
+                        // Normal cell editing
+                        setCellType(row, col, currentCellType);
+                    }
+                });
+                
+                gridContainer.appendChild(cell);
+            }
+        }
+    }
+
+    // Set cell type
+    function setCellType(row, col, type) {
+        const cellKey = `${row}-${col}`;
+        
+        switch (type) {
+            case 'question':
+                gridData[row][col] = '?';
+                // Remove any existing answer
+                delete answerData[cellKey];
+                break;
+            case 'shape':
+                if (window.currentShapeId) {
+                    gridData[row][col] = { shapeId: window.currentShapeId };
+                }
+                break;
+            default:
+                gridData[row][col] = 0;
+                delete answerData[cellKey];
+        }
+        renderGrid();
+        updateStats();
+        updatePreview();
+    }
+
+    // Update statistics
+    function updateStats() {
+        let questionCount = 0;
+        let emptyCount = 0;
+        let fixedCount = 0;
+        
+        for (let row = 0; row < currentGridSize; row++) {
+            for (let col = 0; col < currentGridSize; col++) {
+                const cellValue = gridData[row][col];
+                if (cellValue === '?') {
+                    questionCount++;
+                } else if (typeof cellValue === 'object' && cellValue.shapeId) {
+                    fixedCount++;
+                } else {
+                    emptyCount++;
+                }
+            }
+        }
+        
+        document.getElementById('question-count').textContent = questionCount;
+        document.getElementById('empty-count').textContent = emptyCount;
+        document.getElementById('fixed-count').textContent = fixedCount;
+        
+        // Show/hide answer panel based on question cells
+        if (questionCount > 0) {
+            answerPanel.style.display = 'block';
+        }
+    }
+
+    // Update JSON preview
+    function updatePreview() {
+        gridSizeInput.value = currentGridSize;
+        
+        // Create final grid data with answers embedded
+        const finalGridData = JSON.parse(JSON.stringify(gridData));
+        const solutionData = JSON.parse(JSON.stringify(gridData));
+        
+        // Embed answers in solution data
+        for (let row = 0; row < currentGridSize; row++) {
+            for (let col = 0; col < currentGridSize; col++) {
+                const cellKey = `${row}-${col}`;
+                if (gridData[row][col] === '?' && answerData[cellKey]) {
+                    solutionData[row][col] = { shapeId: answerData[cellKey] };
+                }
+            }
+        }
+        
+        gridDataInput.value = JSON.stringify({
+            grid_data: finalGridData,
+            solution_data: solutionData,
+            answer_data: answerData
+        });
+        
+        gridJsonPreview.textContent = JSON.stringify({
+            grid_size: currentGridSize,
+            grid_data: finalGridData,
+            solution_data: solutionData,
+            answers_defined: Object.keys(answerData).length
+        }, null, 2);
+    }
+
+    // Event listeners for grid size
+    gridSizeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                const newSize = parseInt(this.value);
+                sizeDisplay.textContent = `${newSize}x${newSize}`;
+                
+                if (newSize !== currentGridSize) {
+                    if (confirm('Changing grid size will clear the current grid. Continue?')) {
+                        initializeGrid(newSize);
+                    } else {
+                        // Revert radio selection
+                        document.getElementById(`size-${currentGridSize}x${currentGridSize}`).checked = true;
+                        sizeDisplay.textContent = `${currentGridSize}x${currentGridSize}`;
+                    }
+                }
+            }
+        });
+    });
+
+    cellTypeOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            if (this.dataset.type !== 'shape') {
+                cellTypeOptions.forEach(opt => opt.classList.remove('active'));
+                document.querySelectorAll('.cell-type-option[data-type="shape"]').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                currentCellType = this.dataset.type;
+                answerMode = false;
+                document.body.classList.remove('answer-mode');
+            }
+        });
+    });
+
+    // Grid actions
+    document.getElementById('clear-grid').addEventListener('click', function() {
+        if (confirm('Clear all cells and answers?')) {
+            initializeGrid(currentGridSize);
+        }
+    });
+
+    document.getElementById('fill-questions').addEventListener('click', function() {
+        for (let row = 0; row < currentGridSize; row++) {
+            for (let col = 0; col < currentGridSize; col++) {
+                gridData[row][col] = '?';
+            }
+        }
+        answerData = {}; // Clear answers
+        renderGrid();
+        updateStats();
+        updatePreview();
+    });
+
+    document.getElementById('random-pattern').addEventListener('click', function() {
+        const patterns = ['?', 0];
+        for (let row = 0; row < currentGridSize; row++) {
+            for (let col = 0; col < currentGridSize; col++) {
+                if (Math.random() > 0.3) {
+                    gridData[row][col] = patterns[Math.floor(Math.random() * patterns.length)];
+                }
+            }
+        }
+        answerData = {};
+        renderGrid();
+        updateStats();
+        updatePreview();
+    });
+
+    // Form validation
+    document.getElementById('template-form').addEventListener('submit', function(e) {
+        let questionCount = 0;
+        let answeredQuestions = 0;
+        
+        for (let row = 0; row < currentGridSize; row++) {
+            for (let col = 0; col < currentGridSize; col++) {
+                if (gridData[row][col] === '?') {
+                    questionCount++;
+                    const cellKey = `${row}-${col}`;
+                    if (answerData[cellKey]) {
+                        answeredQuestions++;
+                    }
+                }
+            }
+        }
+        
+        if (questionCount === 0) {
+            e.preventDefault();
+            alert('Puzzle must have at least one question cell (?)');
+            return false;
+        }
+        
+        if (answeredQuestions < questionCount) {
+            e.preventDefault();
+            alert(`Please define answers for all ${questionCount} question cells. Currently ${answeredQuestions} answers defined.`);
+            return false;
+        }
+    });
+
+    // Initialize
+    loadShapes().then(() => {
+        initializeGrid(5); // Start with 5x5
+    });
+});
+</script>
+{% endblock %}

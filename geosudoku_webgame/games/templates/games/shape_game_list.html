@@ -1,0 +1,449 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block shape_game_css %}
+<style>
+body {
+    background: #ffffff;
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: #1a1a1a;
+}
+
+/* Modern page container */
+.page-container {
+    background: #ffffff;
+    min-height: 100vh;
+}
+
+.level-map-container {
+    position: relative;
+    padding: 3rem 0;
+    min-height: calc(100vh - 120px);
+    background: #ffffff;
+}
+
+.level-map-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    padding: 0 2rem;
+}
+
+.level-map-header h1 {
+    color: #2c3e50;
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+    animation: slideInUp 0.8s ease-out;
+}
+
+.level-map-header p {
+    color: #6c757d;
+    font-size: 1.25rem;
+    font-weight: 400;
+    max-width: 600px;
+    margin: 0 auto;
+    animation: slideInUp 0.8s ease-out 0.2s both;
+}
+
+/* Modern games grid */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    padding: 0 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.game-node {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.game-node:nth-child(1) { animation-delay: 0.1s; }
+.game-node:nth-child(2) { animation-delay: 0.2s; }
+.game-node:nth-child(3) { animation-delay: 0.3s; }
+.game-node:nth-child(4) { animation-delay: 0.4s; }
+.game-node:nth-child(5) { animation-delay: 0.5s; }
+.game-node:nth-child(6) { animation-delay: 0.6s; }
+
+.game-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #3b82f6;
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.game-card.easy::before { background: #10b981; }
+.game-card.medium::before { background: #f59e0b; }
+.game-card.hard::before { background: #ef4444; }
+.game-card.expert::before { background: #8b5cf6; }
+
+.game-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.game-card:hover::before {
+    transform: scaleX(1);
+}
+
+.game-icon-container {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: #f8fafc;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+}
+
+.game-card.easy .game-icon-container {
+    background: #ecfdf5;
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.game-card.medium .game-icon-container {
+    background: #fffbeb;
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.game-card.hard .game-icon-container {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.game-card.expert .game-icon-container {
+    background: #faf5ff;
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+}
+
+.game-card:hover .game-icon-container {
+    transform: scale(1.1);
+}
+
+.game-icon {
+    font-size: 2rem;
+    color: inherit;
+}
+
+.game-number {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #f1f5f9;
+    color: #64748b;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.game-info {
+    text-align: center;
+    color: #1e293b;
+}
+
+.game-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #1e293b;
+    line-height: 1.4;
+}
+
+.game-stats {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.game-stats-details {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.difficulty-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.difficulty-badge.easy {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.difficulty-badge.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.difficulty-badge.hard {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.difficulty-badge.expert {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+.hero-section {
+    background: #ffffff;
+    padding: 2rem 0;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 3rem 0;
+    flex-wrap: wrap;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stat-item {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s ease;
+    min-width: 140px;
+}
+
+.stat-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.filter-section {
+    text-align: center;
+    margin: 3rem 0;
+}
+
+.filter-section h5 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+}
+
+.filter-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.875rem;
+}
+
+.filter-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.filter-btn:hover:not(.active) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+/* Modern animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block shape_game_content %}
+<!-- Hero Section -->
+<div class="level-map-container">
+    <div class="level-map-header">
+        <h1>Shape Puzzle Games</h1>
+        <p>Challenge your spatial reasoning with engaging geometric puzzles</p>
+        
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-number">{{ games|length }}</div>
+                <div class="stat-label">Available Games</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ games|length|add:15 }}</div>
+                <div class="stat-label">Unique Shapes</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">4</div>
+                <div class="stat-label">Difficulty Levels</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">Possibilities</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <h5>Filter by Difficulty</h5>
+        <div class="filter-buttons">
+            <a href="{% url 'games:shape_game_list' %}" 
+               class="filter-btn {% if not selected_difficulty %}active{% endif %}">
+                All Games
+            </a>
+            <a href="{% url 'games:shape_game_list' %}?difficulty=easy" 
+               class="filter-btn {% if selected_difficulty == 'easy' %}active{% endif %}">
+                Easy
+            </a>
+            <a href="{% url 'games:shape_game_list' %}?difficulty=medium" 
+               class="filter-btn {% if selected_difficulty == 'medium' %}active{% endif %}">
+                Medium
+            </a>
+            <a href="{% url 'games:shape_game_list' %}?difficulty=hard" 
+               class="filter-btn {% if selected_difficulty == 'hard' %}active{% endif %}">
+                Hard
+            </a>
+            <a href="{% url 'games:shape_game_list' %}?difficulty=expert" 
+               class="filter-btn {% if selected_difficulty == 'expert' %}active{% endif %}">
+                Expert
+            </a>
+        </div>
+    </div>
+
+    <!-- Games Grid -->
+    {% if games %}
+        <div class="games-grid">
+            {% for game in games %}
+                <div class="game-node">
+                    <a href="{% url 'games:play_shape_game' game.id %}" style="text-decoration: none;">
+                        <div class="game-card {{ game.grid_template.difficulty }}">
+                            <div class="difficulty-badge {{ game.grid_template.difficulty }}">
+                                {{ game.grid_template.difficulty|title }}
+                            </div>
+                            <div class="game-number">{{ forloop.counter }}</div>
+                            
+                            <div class="game-icon-container">
+                                <i class="fas fa-puzzle-piece game-icon"></i>
+                            </div>
+                            
+                            <div class="game-info">
+                                <div class="game-title">{{ game.name }}</div>
+                                <div class="game-stats">
+                                    {{ game.grid_template.grid_size }}×{{ game.grid_template.grid_size }} Grid • {{ game.max_time_minutes }} min
+                                </div>
+                                <div class="game-stats-details">
+                                    {{ game.available_shapes.count }} shapes • {{ game.total_attempts }} attempts
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center" style="padding: 4rem 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 2rem; color: #64748b;">
+                <i class="fas fa-puzzle-piece"></i>
+            </div>
+            <h3 style="color: #2c3e50; font-weight: 700;">No Games Available</h3>
+            <p style="color: #64748b; font-weight: 400;">
+                Check back later for new puzzle challenges!
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

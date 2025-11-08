@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        /* Shape game specific styles */
+        .shape-preview {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 2px;
+        }
+        
+        .shape-mini {
+            width: 25px;
+            height: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+            margin: 1px;
+        }
+        
+        .shapes-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            max-width: 200px;
+        }
+        
+        .game-card {
+            transition: var(--transition-smooth);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: var(--bg-white);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .game-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+        
+        .game-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        
+        .stat-item {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .difficulty-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+        }
+        
+        .difficulty-easy {
+            background-color: var(--success-light);
+            color: var(--success-dark);
+        }
+        
+        .difficulty-medium {
+            background-color: var(--warning-light);
+            color: var(--warning-dark);
+        }
+        
+        .difficulty-hard {
+            background-color: var(--danger-light);
+            color: var(--danger-dark);
+        }
+        
+        .play-btn {
+            border-radius: var(--radius-full);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .play-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .hero-section {
+            background: var(--primary-color);
+            color: var(--text-white);
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .hero-section h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .hero-section p {
+            font-size: 1.125rem;
+            opacity: 0.9;
+        }
+    </style>
+    {% block shape_game_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+    {% block shape_game_content %}{% endblock %}
+{% endblock %}

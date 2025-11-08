@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to GeoSudoku{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-primary text-white text-center py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-globe"></i> Welcome to GeoSudoku
+                </h1>
+                <p class="lead mb-4">
+                    Challenge your mind with geography-themed Sudoku puzzles! 
+                    Explore different regions of the world while solving classic number puzzles.
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'authentication:register' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus"></i> Get Started
+                        </a>
+                        <a href="{% url 'authentication:login' %}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    {% else %}
+                        <a href="{% url 'games:dashboard' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                        </a>
+                        <a href="{% url 'games:puzzle_list' %}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-puzzle-piece"></i> Browse Puzzles
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <i class="fas fa-globe-americas" style="font-size: 15rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-5">
+            <h2>Why GeoSudoku?</h2>
+            <p class="text-muted">Combining the challenge of Sudoku with the beauty of geography</p>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marked-alt fa-3x text-primary mb-3"></i>
+                    <h5>Geographic Regions</h5>
+                    <p class="text-muted">
+                        Each puzzle features unique geographic regions instead of traditional 3x3 boxes, 
+                        making each game a journey around the world.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                    <h5>Multiple Difficulties</h5>
+                    <p class="text-muted">
+                        From easy puzzles for beginners to expert challenges for Sudoku masters. 
+                        Progressive difficulty system keeps you engaged.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow border-0">
+                <div class="card-body text-center">
+                    <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+                    <h5>Achievements & Leaderboards</h5>
+                    <p class="text-muted">
+                        Earn achievements, compete with other players, and track your progress 
+                        as you become a GeoSudoku master.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- How to Play Section -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2>How to Play</h2>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow border-0">
+                <div class="card-body">
+                    <h5><i class="fas fa-play-circle text-primary"></i> Basic Rules</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Fill the 9×9 grid with numbers 1-9</li>
+                        <li><i class="fas fa-check text-success"></i> Each row must contain all numbers 1-9</li>
+                        <li><i class="fas fa-check text-success"></i> Each column must contain all numbers 1-9</li>
+                        <li><i class="fas fa-check text-success"></i> Each geographic region must contain all numbers 1-9</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow border-0">
+                <div class="card-body">
+                    <h5><i class="fas fa-gamepad text-info"></i> Game Features</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-mouse text-info"></i> Drag and drop interface</li>
+                        <li><i class="fas fa-lightbulb text-warning"></i> Hint system available</li>
+                        <li><i class="fas fa-undo text-secondary"></i> Undo/Redo functionality</li>
+                        <li><i class="fas fa-save text-success"></i> Auto-save progress</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Call to Action -->
+    {% if not user.is_authenticated %}
+        <div class="text-center py-5">
+            <h3>Ready to Start Your GeoSudoku Journey?</h3>
+            <p class="text-muted mb-4">Join thousands of players exploring the world through puzzles!</p>
+            <a href="{% url 'authentication:register' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket"></i> Start Playing Now
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+</style>
+{% endblock %}

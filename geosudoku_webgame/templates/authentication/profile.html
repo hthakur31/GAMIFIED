@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - GeoSudoku{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-user"></i> Profile Information</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 120px; height: 120px;">
+                        <i class="fas fa-user fa-3x text-white"></i>
+                    </div>
+                {% endif %}
+                
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted">@{{ user.username }}</p>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <strong>{{ user.total_score }}</strong>
+                        <div class="small text-muted">Total Score</div>
+                    </div>
+                    <div class="col-4">
+                        <strong>{{ user.games_played }}</strong>
+                        <div class="small text-muted">Games Played</div>
+                    </div>
+                    <div class="col-4">
+                        <strong>{{ user.win_rate }}%</strong>
+                        <div class="small text-muted">Win Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Achievements -->
+        <div class="card shadow mt-3">
+            <div class="card-header bg-warning text-dark">
+                <h6><i class="fas fa-trophy"></i> Recent Achievements</h6>
+            </div>
+            <div class="card-body">
+                {% if user.achievements.all %}
+                    {% for achievement in user.achievements.all|slice:":3" %}
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="me-2" style="font-size: 1.5em;">{{ achievement.icon }}</span>
+                            <div>
+                                <strong>{{ achievement.name }}</strong>
+                                <div class="small text-muted">{{ achievement.description }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No achievements yet. Keep playing!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Edit Profile Form -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-edit"></i> Edit Profile</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Bio</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="3">{{ user.bio }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="avatar" class="form-label">Avatar</label>
+                        <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Profile
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Recent Games -->
+        <div class="card shadow mt-3">
+            <div class="card-header bg-secondary text-white">
+                <h6><i class="fas fa-history"></i> Recent Games</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_games %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Puzzle</th>
+                                    <th>Difficulty</th>
+                                    <th>Status</th>
+                                    <th>Score</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for game in recent_games %}
+                                    <tr>
+                                        <td>#{{ game.puzzle.id }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ game.puzzle.difficulty|title }}</span>
+                                        </td>
+                                        <td>
+                                            {% if game.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif game.status == 'in_progress' %}
+                                                <span class="badge bg-warning">In Progress</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ game.status|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ game.score }}</td>
+                                        <td>{{ game.start_time|date:"M d, Y" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No games played yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

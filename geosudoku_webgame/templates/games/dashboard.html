@@ -1,0 +1,521 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .welcome-section {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-left: 1rem;
+    }
+    
+    .role-badge.admin {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        color: #212529;
+    }
+    
+    .role-badge.user {
+        background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+        color: white;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .action-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        color: inherit;
+        text-decoration: none;
+    }
+    
+    .action-card.primary:hover { border-color: #007bff; }
+    .action-card.success:hover { border-color: #28a745; }
+    .action-card.warning:hover { border-color: #ffc107; }
+    .action-card.info:hover { border-color: #17a2b8; }
+    .action-card.purple:hover { border-color: #6f42c1; }
+    .action-card.secondary:hover { border-color: #6c757d; }
+    
+    .action-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .action-card.primary .action-icon { color: #007bff; }
+    .action-card.success .action-icon { color: #28a745; }
+    .action-card.warning .action-icon { color: #ffc107; }
+    .action-card.info .action-icon { color: #17a2b8; }
+    .action-card.purple .action-icon { color: #6f42c1; }
+    .action-card.secondary .action-icon { color: #6c757d; }
+    
+    .section-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        color: white;
+        padding: 1.5rem;
+        margin: 0;
+    }
+    
+    .section-body {
+        padding: 1.5rem;
+    }
+    
+    .performance-chart {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .game-type-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .game-type-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid;
+    }
+    
+    .game-type-card.traditional { border-left-color: #007bff; }
+    .game-type-card.shapes { border-left-color: #28a745; }
+    
+    .admin-panel {
+        background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+        color: #212529;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .admin-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .admin-stat {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .recent-games-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .game-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease;
+    }
+    
+    .game-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .game-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        width: 3rem;
+        text-align: center;
+    }
+    
+    .game-info {
+        flex: 1;
+    }
+    
+    .game-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h1 class="mb-3">
+        <i class="fas fa-tachometer-alt me-3"></i>Welcome back, {{ user.get_full_name|default:user.username }}!
+        <span class="role-badge {% if is_admin %}admin{% else %}user{% endif %}">
+            {% if is_admin %}Game Creator{% else %}Player{% endif %}
+        </span>
+    </h1>
+    <p class="lead mb-0">Ready to challenge your mind with some GeoSudoku puzzles?</p>
+</div>
+
+<!-- Overall Statistics -->
+<div class="stats-card">
+    <h3 class="mb-4"><i class="fas fa-chart-line me-2"></i>Your Performance Overview</h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-value">{{ stats.total_games }}</div>
+            <div class="stat-label">Total Games</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ stats.completed_games }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ stats.win_rate }}%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ stats.total_score }}</div>
+            <div class="stat-label">Total Score</div>
+        </div>
+        {% if stats.best_score %}
+        <div class="stat-item">
+            <div class="stat-value">{{ stats.best_score }}</div>
+            <div class="stat-label">Best Score</div>
+        </div>
+        {% endif %}
+        {% if stats.avg_completion_time %}
+        <div class="stat-item">
+            <div class="stat-value">{{ stats.avg_completion_time|floatformat:1 }}m</div>
+            <div class="stat-label">Avg Time</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Admin Panel -->
+{% if is_admin %}
+<div class="admin-panel">
+    <h3 class="mb-4">
+        <i class="fas fa-crown me-2"></i>Admin Dashboard
+    </h3>
+    <div class="admin-stats">
+        <div class="admin-stat">
+            <div class="h4 mb-1">{{ admin_stats.shapes_created }}</div>
+            <small>Shapes Created</small>
+        </div>
+        <div class="admin-stat">
+            <div class="h4 mb-1">{{ admin_stats.templates_created }}</div>
+            <small>Templates</small>
+        </div>
+        <div class="admin-stat">
+            <div class="h4 mb-1">{{ admin_stats.games_created }}</div>
+            <small>Games Created</small>
+        </div>
+        <div class="admin-stat">
+            <div class="h4 mb-1">{{ admin_stats.total_players }}</div>
+            <small>Total Players</small>
+        </div>
+        <div class="admin-stat">
+            <div class="h4 mb-1">{{ admin_stats.total_game_attempts }}</div>
+            <small>Game Attempts</small>
+        </div>
+    </div>
+    
+    <!-- Visual Puzzle Creator Highlight -->
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-magic fa-3x mb-3" style="opacity: 0.9;"></i>
+                    <h4 class="card-title fw-bold">🎨 Visual Puzzle Creator</h4>
+                    <p class="card-text">Create stunning shape puzzles with our drag-and-drop interface. Design grids, place shapes, and create engaging challenges for your players!</p>
+                    <a href="{% url 'games:visual_puzzle_creator' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-paint-brush me-2"></i>Start Creating
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 h-100" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-eye fa-2x mb-3" style="opacity: 0.9;"></i>
+                    <h5 class="card-title">Reference Puzzle</h5>
+                    <p class="card-text">Test the reference puzzle matching your original image.</p>
+                    <a href="{% url 'games:reference_puzzle' %}" class="btn btn-light">
+                        <i class="fas fa-play me-2"></i>Test Play
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="section-card">
+    <div class="section-header">
+        <h4 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h4>
+    </div>
+    <div class="section-body">
+        <div class="quick-actions">
+            {% for action in quick_actions %}
+            <a href="{% url action.url %}" class="action-card {{ action.color }}">
+                <div class="action-icon">
+                    <i class="{{ action.icon }}"></i>
+                </div>
+                <h6 class="mb-0">{{ action.name }}</h6>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Game Type Statistics -->
+<div class="game-type-stats">
+    <div class="game-type-card traditional">
+        <h5 class="mb-3">
+            <i class="fas fa-puzzle-piece text-primary me-2"></i>Traditional Sudoku
+        </h5>
+        <div class="row text-center">
+            <div class="col-4">
+                <div class="h4 mb-1">{{ stats.traditional_games }}</div>
+                <small class="text-muted">Games</small>
+            </div>
+            <div class="col-4">
+                <div class="h4 mb-1">{{ stats.traditional_win_rate }}%</div>
+                <small class="text-muted">Win Rate</small>
+            </div>
+            <div class="col-4">
+                <div class="h4 mb-1">{{ recent_traditional_games|length }}</div>
+                <small class="text-muted">Recent</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="game-type-card shapes">
+        <h5 class="mb-3">
+            <i class="fas fa-shapes text-success me-2"></i>Shape Puzzles
+        </h5>
+        <div class="row text-center">
+            <div class="col-4">
+                <div class="h4 mb-1">{{ stats.shape_games }}</div>
+                <small class="text-muted">Games</small>
+            </div>
+            <div class="col-4">
+                <div class="h4 mb-1">{{ stats.shape_win_rate }}%</div>
+                <small class="text-muted">Win Rate</small>
+            </div>
+            <div class="col-4">
+                <div class="h4 mb-1">{{ recent_shape_games|length }}</div>
+                <small class="text-muted">Recent</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Games -->
+    <div class="col-lg-8">
+        <div class="section-card">
+            <div class="section-header">
+                <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h4>
+            </div>
+            <div class="section-body p-0">
+                <div class="recent-games-list">
+                    {% if recent_traditional_games or recent_shape_games %}
+                        <!-- Traditional Games -->
+                        {% for game in recent_traditional_games %}
+                        <div class="game-item">
+                            <div class="game-icon text-primary">
+                                <i class="fas fa-puzzle-piece"></i>
+                            </div>
+                            <div class="game-info">
+                                <h6 class="mb-1">Traditional Puzzle #{{ game.puzzle.id }}</h6>
+                                <div class="game-meta">
+                                    <span class="badge bg-{{ game.status|lower }}">{{ game.status|title }}</span>
+                                    • Score: {{ game.score }}
+                                    • {{ game.start_time|timesince }} ago
+                                </div>
+                            </div>
+                            <a href="{% url 'games:play_puzzle' game.puzzle.id %}" class="btn btn-sm btn-outline-primary">
+                                {% if game.status == 'in_progress' %}Continue{% else %}View{% endif %}
+                            </a>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Shape Games -->
+                        {% for attempt in recent_shape_games %}
+                        <div class="game-item">
+                            <div class="game-icon text-success">
+                                <i class="fas fa-shapes"></i>
+                            </div>
+                            <div class="game-info">
+                                <h6 class="mb-1">{{ attempt.shape_game.name }}</h6>
+                                <div class="game-meta">
+                                    <span class="badge bg-{{ attempt.status }}">{{ attempt.status|title }}</span>
+                                    • Score: {{ attempt.score }}
+                                    • {{ attempt.start_time|timesince }} ago
+                                </div>
+                            </div>
+                            <a href="{% url 'games:play_shape_game' attempt.shape_game.id %}" class="btn btn-sm btn-outline-success">
+                                {% if attempt.status == 'in_progress' %}Continue{% else %}Play Again{% endif %}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-gamepad fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No games played yet!</h5>
+                            <p class="text-muted mb-4">Ready to start your GeoSudoku journey?</p>
+                            <a href="{% url 'games:puzzle_list' %}" class="btn btn-primary me-2">
+                                <i class="fas fa-puzzle-piece"></i> Traditional Puzzles
+                            </a>
+                            <a href="{% url 'games:shape_game_list' %}" class="btn btn-success">
+                                <i class="fas fa-shapes"></i> Shape Puzzles
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Achievements & Performance -->
+    <div class="col-lg-4">
+        <!-- Recent Performance -->
+        {% if recent_performance.games_this_month %}
+        <div class="section-card">
+            <div class="section-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>This Month</h5>
+            </div>
+            <div class="section-body">
+                <div class="performance-chart">
+                    <div class="row text-center">
+                        <div class="col-12 mb-3">
+                            <div class="h3 mb-1">{{ recent_performance.games_this_month }}</div>
+                            <small class="text-muted">Games Played</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 mb-1">{{ recent_performance.avg_score|floatformat:0|default:"0" }}</div>
+                            <small class="text-muted">Avg Score</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 mb-1">{{ recent_performance.completion_rate|floatformat:0|default:"0" }}%</div>
+                            <small class="text-muted">Completion</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Achievements -->
+        <div class="section-card">
+            <div class="section-header">
+                <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Recent Achievements</h5>
+            </div>
+            <div class="section-body">
+                {% if achievements %}
+                    {% for achievement in achievements %}
+                    <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                        <span class="me-3" style="font-size: 2em;">{{ achievement.icon|default:"🏆" }}</span>
+                        <div>
+                            <h6 class="mb-1">{{ achievement.name }}</h6>
+                            <small class="text-muted">{{ achievement.description }}</small>
+                            {% if achievement.earned_at %}
+                            <div class="small text-muted">
+                                Earned {{ achievement.earned_at|timesince }} ago
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-medal fa-3x mb-3"></i>
+                        <h6>No achievements yet!</h6>
+                        <p class="small mb-0">Complete puzzles to earn your first achievement.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}Registration Successful - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.success-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.success-card {
+    border-radius: 25px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15);
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.98);
+    text-align: center;
+}
+
+.success-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    padding: 3rem 2rem;
+    color: white;
+}
+
+.success-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-30px);
+    }
+    60% {
+        transform: translateY(-15px);
+    }
+}
+
+.success-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.success-subtitle {
+    opacity: 0.95;
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+.success-content {
+    padding: 3rem 2rem;
+}
+
+.user-info {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.user-info h4 {
+    color: #28a745;
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(40, 167, 69, 0.1);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.info-value {
+    color: #495057;
+    font-weight: 500;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.role-badge.user {
+    background: #0d6efd;
+    color: white;
+}
+
+.role-badge.admin {
+    background: #ffc107;
+    color: #212529;
+}
+
+.next-steps {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.next-steps h5 {
+    color: #28a745;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.step-number {
+    background: #28a745;
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-right: 1rem;
+}
+
+.step-content h6 {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.step-content p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.login-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 1rem 3rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+    font-size: 1.1rem;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(40, 167, 69, 0.4);
+}
+
+.celebration-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.confetti {
+    position: absolute;
+    background: #ffc107;
+    animation: confetti-fall 3s linear infinite;
+}
+
+.confetti:nth-child(1) { left: 10%; animation-delay: 0s; background: #28a745; }
+.confetti:nth-child(2) { left: 20%; animation-delay: 0.5s; background: #0d6efd; }
+.confetti:nth-child(3) { left: 30%; animation-delay: 1s; background: #dc3545; }
+.confetti:nth-child(4) { left: 40%; animation-delay: 1.5s; background: #ffc107; }
+.confetti:nth-child(5) { left: 50%; animation-delay: 2s; background: #20c997; }
+.confetti:nth-child(6) { left: 60%; animation-delay: 2.5s; background: #6f42c1; }
+.confetti:nth-child(7) { left: 70%; animation-delay: 0.3s; background: #fd7e14; }
+.confetti:nth-child(8) { left: 80%; animation-delay: 0.8s; background: #e83e8c; }
+.confetti:nth-child(9) { left: 90%; animation-delay: 1.3s; background: #198754; }
+
+@keyframes confetti-fall {
+    0% {
+        opacity: 1;
+        top: -10px;
+        transform: rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        top: 100vh;
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .success-title {
+        font-size: 2rem;
+    }
+    
+    .success-content {
+        padding: 2rem 1.5rem;
+    }
+    
+    .user-info, .next-steps {
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <!-- Celebration Animation -->
+    <div class="celebration-animation">
+        <div class="confetti" style="width: 10px; height: 10px;"></div>
+        <div class="confetti" style="width: 8px; height: 8px;"></div>
+        <div class="confetti" style="width: 12px; height: 12px;"></div>
+        <div class="confetti" style="width: 6px; height: 6px;"></div>
+        <div class="confetti" style="width: 14px; height: 14px;"></div>
+        <div class="confetti" style="width: 9px; height: 9px;"></div>
+        <div class="confetti" style="width: 11px; height: 11px;"></div>
+        <div class="confetti" style="width: 7px; height: 7px;"></div>
+        <div class="confetti" style="width: 13px; height: 13px;"></div>
+    </div>
+    
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+                <div class="success-card">
+                    <div class="success-header">
+                        <div class="success-icon">
+                            ✅
+                        </div>
+                        <h1 class="success-title">Registration completed successfully!</h1>
+                        <p class="success-subtitle">You can now login with your registered email and password.</p>
+                    </div>
+                    
+                    <div class="success-content">
+                        <!-- User Information Summary -->
+                        <div class="user-info">
+                            <h4>
+                                <i class="fas fa-user-circle me-2"></i>Account Summary
+                            </h4>
+                            <div class="info-item">
+                                <span class="info-label">Name:</span>
+                                <span class="info-value">{{ success_data.name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value">{{ success_data.email }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Account Type:</span>
+                                <span class="role-badge {{ success_data.role }}">
+                                    {% if success_data.role == 'user' %}
+                                        🎮 Player
+                                    {% else %}
+                                        👑 Admin
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Next Steps -->
+                        <div class="next-steps">
+                            <h5>
+                                <i class="fas fa-rocket me-2"></i>What's Next?
+                            </h5>
+                            
+                            {% if success_data.role == 'user' %}
+                                <div class="step-item">
+                                    <div class="step-number">1</div>
+                                    <div class="step-content">
+                                        <h6>Login to Your Account</h6>
+                                        <p>Use your email and password to sign in and access your player dashboard</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-item">
+                                    <div class="step-number">2</div>
+                                    <div class="step-content">
+                                        <h6>Start Playing Puzzles</h6>
+                                        <p>Browse our collection of GeoSudoku puzzles and begin your journey</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-item">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
+                                        <h6>Track Your Progress</h6>
+                                        <p>Monitor your performance, earn achievements, and climb the leaderboards</p>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="step-item">
+                                    <div class="step-number">1</div>
+                                    <div class="step-content">
+                                        <h6>Access Admin Dashboard</h6>
+                                        <p>Login to access your administrative controls and management tools</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-item">
+                                    <div class="step-number">2</div>
+                                    <div class="step-content">
+                                        <h6>Create Custom Content</h6>
+                                        <p>Start designing shapes, templates, and puzzles for the community</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-item">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
+                                        <h6>Manage Users & Games</h6>
+                                        <p>Monitor user activity, manage accounts, and oversee game performance</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Action Button -->
+                        <div class="text-center">
+                            <a href="{% url 'authentication:login_select_role' %}" class="btn login-btn text-white">
+                                <i class="fas fa-sign-in-alt me-2"></i>Go to Login
+                            </a>
+                        </div>
+                        
+                        <!-- Additional Information -->
+                        <div class="mt-4 text-center">
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-envelope me-2"></i>
+                                A confirmation email has been sent to your inbox
+                            </p>
+                            <small class="text-muted">
+                                Welcome to the GeoSudoku community! We're excited to have you on board.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add some celebration effects
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-redirect after 10 seconds (optional)
+    setTimeout(function() {
+        const autoRedirect = confirm('Would you like to go to the login page now?');
+        if (autoRedirect) {
+            window.location.href = "{% url 'authentication:login_select_role' %}";
+        }
+    }, 10000);
+    
+    // Add some interactive effects
+    const successCard = document.querySelector('.success-card');
+    
+    // Add entrance animation
+    successCard.style.opacity = '0';
+    successCard.style.transform = 'translateY(30px)';
+    
+    setTimeout(() => {
+        successCard.style.transition = 'all 0.6s ease';
+        successCard.style.opacity = '1';
+        successCard.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // Add click effect to the main button
+    const loginBtn = document.querySelector('.login-btn');
+    loginBtn.addEventListener('click', function() {
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Redirecting...';
+    });
+});
+</script>
+{% endblock %}

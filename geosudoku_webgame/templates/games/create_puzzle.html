@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Puzzle - GeoSudoku{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4><i class="fas fa-plus"></i> Create New Puzzle</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="difficulty" class="form-label">Difficulty Level</label>
+                            <select class="form-select" id="difficulty" name="difficulty" required>
+                                <option value="easy">Easy (35 empty cells)</option>
+                                <option value="medium">Medium (45 empty cells)</option>
+                                <option value="hard">Hard (55 empty cells)</option>
+                                <option value="expert">Expert (65 empty cells)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> How it works:</h6>
+                        <ul class="mb-0">
+                            <li>We'll generate a new GeoSudoku puzzle for you</li>
+                            <li>Each puzzle features 9 geographic regions instead of traditional 3x3 boxes</li>
+                            <li>The difficulty determines how many numbers are initially filled in</li>
+                            <li>You can play your puzzle immediately after creation</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'games:puzzle_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-magic"></i> Generate Puzzle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Preview of regions -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-globe"></i> Geographic Regions Preview</h5>
+            </div>
+            <div class="card-body">
+                <p>Each GeoSudoku puzzle features these 9 geographic regions:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><span class="region-color-preview" style="background: var(--region-0);"></span> North America</li>
+                            <li><span class="region-color-preview" style="background: var(--region-1);"></span> Europe</li>
+                            <li><span class="region-color-preview" style="background: var(--region-2);"></span> Asia</li>
+                            <li><span class="region-color-preview" style="background: var(--region-3);"></span> Africa</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><span class="region-color-preview" style="background: var(--region-4);"></span> South America</li>
+                            <li><span class="region-color-preview" style="background: var(--region-5);"></span> Australia</li>
+                            <li><span class="region-color-preview" style="background: var(--region-6);"></span> Antarctica</li>
+                            <li><span class="region-color-preview" style="background: var(--region-7);"></span> Oceania</li>
+                            <li><span class="region-color-preview" style="background: var(--region-8);"></span> Arctic</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.region-color-preview {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    vertical-align: middle;
+}
+
+.list-unstyled li {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+</style>
+{% endblock %}

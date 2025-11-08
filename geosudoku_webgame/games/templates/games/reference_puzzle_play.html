@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reference Puzzle - Test{% endblock %}
+
+{% block extra_css %}
+<style>
+    .puzzle-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .puzzle-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .puzzle-title {
+        font-size: 2rem;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .puzzle-description {
+        color: #666;
+        font-size: 1.1rem;
+    }
+    
+    .game-area {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        align-items: center;
+    }
+    
+    .puzzle-grid {
+        display: grid;
+        grid-template-columns: repeat({{ grid_template.grid_size }}, 100px);
+        grid-template-rows: repeat({{ grid_template.grid_size }}, 100px);
+        gap: 3px;
+        background-color: #333;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .grid-cell {
+        background-color: white;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .grid-cell:hover {
+        border-color: #007bff;
+        transform: scale(1.02);
+    }
+    
+    .grid-cell.question-cell {
+        background-color: #f8f9fa;
+        border: 2px dashed #6c757d;
+    }
+    
+    .grid-cell.question-cell::before {
+        content: '?';
+        font-size: 3rem;
+        font-weight: bold;
+        color: #6c757d;
+    }
+    
+    .shape-in-cell {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .shape-in-cell svg {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .shape-options {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    
+    .shape-option {
+        width: 80px;
+        height: 80px;
+        background-color: white;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .shape-option:hover {
+        border-color: #007bff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .shape-option.selected {
+        border-color: #28a745;
+        background-color: #f8fff9;
+    }
+    
+    .shape-option svg {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .game-info {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .info-item {
+        display: inline-block;
+        margin: 0 15px;
+        font-weight: 500;
+    }
+    
+    .submit-button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        margin-top: 20px;
+    }
+    
+    .submit-button:hover {
+        background-color: #218838;
+    }
+    
+    .submit-button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .feedback-message {
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 20px;
+        font-weight: 500;
+        text-align: center;
+    }
+    
+    .feedback-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .feedback-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="puzzle-container">
+    <div class="puzzle-header">
+        <h1 class="puzzle-title">{{ shape_game.name }}</h1>
+        <p class="puzzle-description">{{ shape_game.description }}</p>
+    </div>
+    
+    <div class="game-info">
+        <span class="info-item">Grid Size: {{ grid_template.grid_size }}x{{ grid_template.grid_size }}</span>
+        <span class="info-item">Time Limit: {{ max_time }} minutes</span>
+        <span class="info-item">Points per Correct: {{ points_per_correct }}</span>
+    </div>
+    
+    <div class="game-area">
+        <!-- Puzzle Grid -->
+        <div class="puzzle-grid" id="puzzleGrid">
+            {% for row in grid_data %}
+                {% for cell in row %}
+                    <div class="grid-cell {% if cell == '?' %}question-cell{% endif %}" 
+                         data-row="{{ forloop.parentloop.counter0 }}" 
+                         data-col="{{ forloop.counter0 }}">
+                        {% if cell != '?' and cell %}
+                            {% for shape in available_shapes %}
+                                {% if shape.id == cell %}
+                                    <div class="shape-in-cell">
+                                        <svg viewBox="0 0 40 40">
+                                            {{ shape.svg_data|safe }}
+                                        </svg>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        
+        <!-- Shape Options -->
+        <div class="shape-options">
+            <h3 style="width: 100%; text-align: center; margin: 20px 0;">Choose the correct shape:</h3>
+            <div style="display: flex; gap: 20px; justify-content: center;">
+                {% for shape in available_shapes %}
+                    <div class="shape-option" 
+                         data-shape-id="{{ shape.id }}" 
+                         title="{{ shape.name }}">
+                        <svg viewBox="0 0 40 40" style="color: {{ shape.color }};">
+                            {{ shape.svg_data|safe }}
+                        </svg>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <button class="submit-button" id="submitAnswer" disabled>Submit Answer</button>
+        
+        <div id="feedbackMessage" class="feedback-message" style="display: none;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let selectedShape = null;
+    let questionCell = null;
+    
+    // Find the question cell
+    const questionCells = document.querySelectorAll('.question-cell');
+    if (questionCells.length > 0) {
+        questionCell = questionCells[0];
+    }
+    
+    // Shape option selection
+    const shapeOptions = document.querySelectorAll('.shape-option');
+    const submitButton = document.getElementById('submitAnswer');
+    
+    shapeOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove selection from all options
+            shapeOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // Select this option
+            this.classList.add('selected');
+            selectedShape = this.dataset.shapeId;
+            
+            // Enable submit button
+            submitButton.disabled = false;
+            
+            // Preview the shape in the question cell
+            if (questionCell) {
+                const existingPreview = questionCell.querySelector('.shape-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+                
+                const shapeClone = this.cloneNode(true);
+                shapeClone.classList.remove('shape-option', 'selected');
+                shapeClone.classList.add('shape-preview', 'shape-in-cell');
+                shapeClone.style.opacity = '0.7';
+                questionCell.appendChild(shapeClone);
+            }
+        });
+    });
+    
+    // Submit answer
+    submitButton.addEventListener('click', function() {
+        if (!selectedShape || !questionCell) {
+            showFeedback('Please select a shape first!', 'error');
+            return;
+        }
+        
+        // Check if the answer is correct
+        const correctAnswer = {{ solution_data.correct_answer }};
+        const selectedShapeId = parseInt(selectedShape);
+        
+        if (selectedShapeId === correctAnswer) {
+            showFeedback('Correct! Well done! 🎉', 'success');
+            
+            // Make the preview permanent
+            const preview = questionCell.querySelector('.shape-preview');
+            if (preview) {
+                preview.style.opacity = '1';
+                preview.classList.remove('shape-preview');
+            }
+            
+            // Disable further interaction
+            shapeOptions.forEach(opt => opt.style.pointerEvents = 'none');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Completed!';
+            
+        } else {
+            showFeedback('Not quite right. Try again! 🤔', 'error');
+            
+            // Remove the preview
+            const preview = questionCell.querySelector('.shape-preview');
+            if (preview) {
+                preview.remove();
+            }
+            
+            // Reset selection
+            shapeOptions.forEach(opt => opt.classList.remove('selected'));
+            selectedShape = null;
+            submitButton.disabled = true;
+        }
+    });
+    
+    function showFeedback(message, type) {
+        const feedbackDiv = document.getElementById('feedbackMessage');
+        feedbackDiv.textContent = message;
+        feedbackDiv.className = `feedback-message feedback-${type}`;
+        feedbackDiv.style.display = 'block';
+        
+        // Auto-hide after 3 seconds for error messages
+        if (type === 'error') {
+            setTimeout(() => {
+                feedbackDiv.style.display = 'none';
+            }, 3000);
+        }
+    }
+});
+</script>
+{% endblock %}

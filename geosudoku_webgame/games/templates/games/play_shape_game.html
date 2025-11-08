@@ -1,0 +1,1058 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block shape_game_css %}
+<style>
+body {
+    background: var(--bg-white);
+    min-height: 100vh;
+    font-family: var(--font-primary);
+    color: var(--text-primary);
+}
+
+.game-container {
+    background: var(--bg-white);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.game-board {
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 2.5rem;
+    margin-bottom: 1rem;
+    border: 2px solid #e2e8f0;
+    animation: fadeInScale 0.6s ease-out;
+}
+
+.game-header {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: none;
+}
+
+.shapes-panel {
+    background: linear-gradient(135deg, #ffffff, #f1f5f9);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 2rem;
+    max-height: 650px;
+    overflow-y: auto;
+    border: 2px solid #e2e8f0;
+    animation: fadeInScale 0.8s ease-out;
+}
+
+.grid-container {
+    display: grid;
+    gap: 4px;
+    background: var(--bg-light);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    justify-content: center;
+    margin: 0 auto;
+    max-width: fit-content;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid var(--primary-color);
+    position: relative;
+}
+
+.grid-cell {
+    width: 85px;
+    height: 85px;
+    background: var(--bg-white);
+    border: 3px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.grid-cell:hover:not(.fixed) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+.grid-cell.droppable {
+    border-color: var(--success-color);
+    background: var(--success-light);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    transform: scale(1.02);
+    animation: glow-success 1.5s infinite;
+}
+
+.grid-cell.question {
+    background: linear-gradient(135deg, #fef3c7, #fbbf24);
+    border-color: #f59e0b;
+    color: #92400e;
+    font-size: 2rem;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+    animation: questionPulse 2s infinite ease-in-out;
+}
+
+.grid-cell.question .question-mark {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--warning-dark);
+}
+
+.grid-cell.question:hover {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(251, 191, 36, 0.4);
+}
+
+.grid-cell.droppable {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #d1fae5, #10b981);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
+    transform: scale(1.08);
+    animation: dropZoneGlow 1.5s infinite;
+}
+
+.grid-cell.fixed {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    border-color: #9ca3af;
+    color: #6b7280;
+    cursor: default;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.grid-cell.occupied {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe, #93c5fd);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    animation: success-placed 0.6s ease;
+}
+
+.shape-item {
+    width: 110px;
+    height: 110px;
+    border: 3px solid #e5e7eb;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 1rem;
+    position: relative;
+    background: linear-gradient(135deg, #ffffff, #f9fafb);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.shape-item:hover {
+    border-color: #3b82f6;
+    transform: translateY(-5px) scale(1.08);
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.shape-item.dragging {
+    cursor: grabbing;
+    opacity: 0.9;
+    transform: rotate(3deg) scale(1.1);
+    z-index: 1000;
+    box-shadow: var(--shadow-xl);
+}
+
+.shape-item.used {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(60%);
+    transform: scale(0.95);
+    border-color: var(--border-light);
+}
+
+.shape-svg {
+    max-width: 60px;
+    max-height: 60px;
+    pointer-events: none;
+    margin-bottom: 5px;
+}
+
+.placed-shape {
+    max-width: 50px;
+    max-height: 50px;
+    pointer-events: none;
+}
+
+.game-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1rem;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0 1rem;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #1f2937;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.5rem;
+}
+
+.timer .stat-value {
+    color: #f59e0b;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.score .stat-value {
+    color: #10b981;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.shapes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1.5rem;
+    max-height: 450px;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.shapes-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.shapes-grid::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+}
+
+.shapes-grid::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: var(--radius-sm);
+}
+
+.shapes-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+.feedback-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 350px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    animation: slideInUp 0.3s ease-out;
+}
+
+.progress {
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--bg-light);
+    overflow: hidden;
+}
+
+.progress-bar {
+    border-radius: var(--radius-full);
+    background: var(--success-color);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shape-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+@keyframes questionPulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+    }
+    50% { 
+        transform: scale(1.02);
+        box-shadow: 0 6px 16px rgba(251, 191, 36, 0.4);
+    }
+}
+
+@keyframes dropZoneGlow {
+    0%, 100% { 
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+}
+
+@keyframes success-placed {
+    0% { 
+        transform: scale(1); 
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    50% { 
+        transform: scale(1.1); 
+        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.5);
+    }
+    100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.instruction-card {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 2px solid #3b82f6;
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-top: 1.5rem;
+    animation: slideInUp 0.8s ease-out;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+.instruction-card h6 {
+    color: var(--info-dark);
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.instruction-card ul {
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+.instruction-card li {
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .grid-cell {
+        width: 65px;
+        height: 65px;
+        font-size: 1rem;
+    }
+    
+    .shape-item {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .shape-svg {
+        max-width: 50px;
+        max-height: 50px;
+    }
+    
+    .placed-shape {
+        max-width: 40px;
+        max-height: 40px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .game-header {
+        padding: 1.5rem;
+    }
+    
+    .game-stats {
+        padding: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .stat-item {
+        min-width: 100px;
+    }
+    
+    .grid-container {
+        padding: 1rem;
+        gap: 3px;
+    }
+    
+    .shapes-panel {
+        max-height: 400px;
+        padding: 1.5rem;
+    }
+    
+    .instruction-card {
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block shape_game_content %}
+<div class="game-container">
+    <div class="container-fluid">
+        <!-- Game Header -->
+        <div class="game-header">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <h3 class="mb-0">{{ game.name }}</h3>
+                    <small class="text-muted">{{ template.difficulty|title }} • {{ template.grid_size }}x{{ template.grid_size }}</small>
+                </div>
+                <div class="col-md-8">
+                    <div class="game-stats">
+                        <div class="stat-item">
+                            <div class="stat-value timer" id="timer">00:00</div>
+                            <div class="stat-label">Time</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value score" id="score">0</div>
+                            <div class="stat-label">Score</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="placed-count">0</div>
+                            <div class="stat-label">Placed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="remaining-count">{{ template.question_cell_count }}</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-outline-secondary btn-sm" id="hint-btn">
+                                <i class="fas fa-lightbulb"></i> Hint
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" id="reset-btn">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" id="submit-btn" disabled>
+                                <i class="fas fa-check"></i> Submit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Game Board -->
+            <div class="col-lg-8">
+                <div class="game-board">
+                    <h5 class="text-center mb-4">
+                        <i class="fas fa-puzzle-piece"></i> Game Board
+                        <small class="text-muted d-block">Drag shapes to the highlighted question cells</small>
+                    </h5>
+                    
+                    <div id="grid-container" class="grid-container">
+                        <!-- Grid cells will be generated here -->
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" id="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">Game Progress</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shapes Panel -->
+            <div class="col-lg-4">
+                <div class="shapes-panel">
+                    <h5 class="mb-3">
+                        <i class="fas fa-shapes"></i> Available Shapes
+                        <small class="text-muted d-block">Drag to place on the board</small>
+                    </h5>
+                    
+                    <div class="shapes-grid" id="shapes-container">
+                        {% for shape in shapes %}
+                            <div class="shape-item" 
+                                 draggable="true" 
+                                 data-shape-id="{{ shape.id }}"
+                                 data-shape-name="{{ shape.name }}"
+                                 data-shape-type="{{ shape.shape_type }}"
+                                 style="border-color: {{ shape.color }};">
+                                <div class="shape-svg" style="color: {{ shape.color }};">
+                                    <svg viewBox="0 0 40 40" width="50" height="50">
+                                        {{ shape.svg_data|safe }}
+                                    </svg>
+                                </div>
+                                <div class="shape-name">
+                                    {{ shape.name }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="instruction-card">
+                        <h6><i class="fas fa-info-circle"></i> How to Play</h6>
+                        <ul class="mb-0">
+                            <li><strong>Drag</strong> shapes from this panel</li>
+                            <li><strong>Drop</strong> them on yellow question cells (?)</li>
+                            <li><strong>Fill</strong> all question cells to complete</li>
+                            <li><strong>Click</strong> placed shapes to remove them</li>
+                            <li><strong>Earn</strong> points for correct placements!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Game completion modal -->
+<div class="modal fade" id="gameCompleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trophy"></i> Congratulations!
+                </h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-star text-warning fa-3x"></i>
+                </div>
+                <h4>Game Completed!</h4>
+                <p class="text-muted">You've successfully completed the shape puzzle!</p>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <strong id="final-time">--:--</strong><br>
+                        <small>Time</small>
+                    </div>
+                    <div class="col-4">
+                        <strong id="final-score">0</strong><br>
+                        <small>Score</small>
+                    </div>
+                    <div class="col-4">
+                        <strong id="accuracy">100%</strong><br>
+                        <small>Accuracy</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{% url 'games:shape_game_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> Back to Games
+                </a>
+                <button type="button" class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback messages container -->
+<div id="feedback-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Game data from Django
+const gameData = {
+    gameId: {{ game.id }},
+    attemptId: '{{ attempt.id }}',
+    gridSize: {{ template.grid_size }},
+    gridData: {{ grid_data|safe }},
+    currentState: {{ current_state|safe }},
+    maxTime: {{ game.max_time_minutes }},
+    pointsPerCorrect: {{ game.points_per_correct }},
+    penaltyPerWrong: {{ game.penalty_per_wrong }}
+};
+
+class ShapeGameController {
+    constructor() {
+        this.gridData = gameData.gridData;
+        this.gridSize = gameData.gridSize;
+        this.currentPlacements = gameData.currentState || {};
+        this.startTime = new Date();
+        this.timer = null;
+        this.score = 0;
+        this.placedCount = 0;
+        this.totalQuestions = 0;
+        
+        this.init();
+    }
+    
+    init() {
+        this.createGrid();
+        this.setupDragAndDrop();
+        this.startTimer();
+        this.updateStats();
+        this.restoreState();
+        this.setupEventListeners();
+    }
+    
+    createGrid() {
+        const gridContainer = document.getElementById('grid-container');
+        gridContainer.style.gridTemplateColumns = `repeat(${this.gridSize}, 1fr)`;
+        gridContainer.innerHTML = '';
+        
+        for (let row = 0; row < this.gridSize; row++) {
+            for (let col = 0; col < this.gridSize; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                cell.dataset.position = `${row},${col}`;
+                
+                // Check if this position has data in the grid
+                const cellData = this.getCellData(row, col);
+                
+                if (cellData && cellData.type === 'question') {
+                    cell.classList.add('question');
+                    cell.innerHTML = '<span class="question-mark">?</span>';
+                    this.totalQuestions++;
+                } else if (cellData && cellData.type === 'shape') {
+                    cell.classList.add('fixed');
+                    // Display the actual shape
+                    this.renderShapeInCell(cell, cellData);
+                } else {
+                    cell.classList.add('empty');
+                }
+                
+                gridContainer.appendChild(cell);
+            }
+        }
+    }
+    
+    getCellData(row, col) {
+        // Handle both object-based and list-based grid data structures
+        
+        // First try object-based structure: gridData["0"]["0"]
+        if (this.gridData && typeof this.gridData === 'object' && !Array.isArray(this.gridData)) {
+            const rowKey = row.toString();
+            const colKey = col.toString();
+            if (this.gridData[rowKey] && this.gridData[rowKey][colKey]) {
+                return this.gridData[rowKey][colKey];
+            }
+        }
+        
+        // Then try list-based structure: gridData[0][0]
+        if (Array.isArray(this.gridData) && this.gridData[row] && Array.isArray(this.gridData[row])) {
+            const cellData = this.gridData[row][col];
+            // Skip null or undefined values
+            if (cellData !== null && cellData !== undefined) {
+                return cellData;
+            }
+        }
+        
+        return null;
+    }
+    
+    renderShapeInCell(cell, cellData) {
+        // Find the shape element from available shapes to get SVG
+        const shapeElements = document.querySelectorAll('.shape-item');
+        let shapeElement = null;
+        
+        shapeElements.forEach(element => {
+            if (parseInt(element.dataset.shapeId) === cellData.shapeId) {
+                shapeElement = element;
+            }
+        });
+        
+        if (shapeElement) {
+            const svg = shapeElement.querySelector('.shape-svg svg');
+            if (svg) {
+                const clonedSvg = svg.cloneNode(true);
+                clonedSvg.style.width = '30px';
+                clonedSvg.style.height = '30px';
+                cell.appendChild(clonedSvg);
+            }
+        } else {
+            // Fallback: show shape name
+            cell.innerHTML = `<small>${cellData.shapeName}</small>`;
+        }
+        cell.title = cellData.shapeName;
+    }
+    
+    setupDragAndDrop() {
+        // Setup draggable shapes
+        const shapes = document.querySelectorAll('.shape-item');
+        shapes.forEach(shape => {
+            shape.addEventListener('dragstart', this.handleDragStart.bind(this));
+            shape.addEventListener('dragend', this.handleDragEnd.bind(this));
+        });
+        
+        // Setup droppable cells
+        const questionCells = document.querySelectorAll('.grid-cell.question');
+        questionCells.forEach(cell => {
+            cell.addEventListener('dragover', this.handleDragOver.bind(this));
+            cell.addEventListener('drop', this.handleDrop.bind(this));
+            cell.addEventListener('click', this.handleCellClick.bind(this));
+        });
+    }
+    
+    handleDragStart(e) {
+        const shape = e.target;
+        if (shape.classList.contains('used')) {
+            e.preventDefault();
+            return;
+        }
+        
+        shape.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+            shapeId: shape.dataset.shapeId,
+            shapeName: shape.dataset.shapeName,
+            shapeType: shape.dataset.shapeType
+        }));
+        
+        // Highlight droppable cells
+        document.querySelectorAll('.grid-cell.question:not(.occupied)').forEach(cell => {
+            cell.classList.add('droppable');
+        });
+    }
+    
+    handleDragEnd(e) {
+        e.target.classList.remove('dragging');
+        document.querySelectorAll('.grid-cell.droppable').forEach(cell => {
+            cell.classList.remove('droppable');
+        });
+    }
+    
+    handleDragOver(e) {
+        if (e.target.classList.contains('question') && !e.target.classList.contains('occupied')) {
+            e.preventDefault();
+        }
+    }
+    
+    handleDrop(e) {
+        e.preventDefault();
+        const cell = e.target;
+        
+        if (!cell.classList.contains('question') || cell.classList.contains('occupied')) {
+            return;
+        }
+        
+        const shapeData = JSON.parse(e.dataTransfer.getData('text/plain'));
+        this.placeShape(cell, shapeData);
+    }
+    
+    handleCellClick(e) {
+        const cell = e.target;
+        if (cell.classList.contains('occupied')) {
+            this.removeShape(cell);
+        }
+    }
+    
+    placeShape(cell, shapeData) {
+        const position = cell.dataset.position;
+        const shapeElement = document.querySelector(`[data-shape-id="${shapeData.shapeId}"]`);
+        
+        // Mark cell as occupied
+        cell.classList.add('occupied');
+        cell.textContent = '';
+        
+        // Clone shape SVG for placement
+        const shapeSvg = shapeElement.querySelector('.shape-svg').cloneNode(true);
+        shapeSvg.classList.add('placed-shape');
+        cell.appendChild(shapeSvg);
+        
+        // Store placement
+        this.currentPlacements[position] = {
+            shapeId: parseInt(shapeData.shapeId),
+            shapeName: shapeData.shapeName,
+            shapeType: shapeData.shapeType
+        };
+        
+        // Mark shape as used
+        shapeElement.classList.add('used');
+        
+        this.placedCount++;
+        this.updateStats();
+        this.saveGameState();
+        this.showFeedback('Shape placed successfully!', 'success');
+        
+        if (this.placedCount === this.totalQuestions) {
+            this.completeGame();
+        }
+    }
+    
+    removeShape(cell) {
+        const position = cell.dataset.position;
+        const placement = this.currentPlacements[position];
+        
+        if (!placement) return;
+        
+        // Remove from cell
+        cell.classList.remove('occupied');
+        cell.textContent = '?';
+        cell.innerHTML = '?';
+        
+        // Mark shape as available again
+        const shapeElement = document.querySelector(`[data-shape-id="${placement.shapeId}"]`);
+        if (shapeElement) {
+            shapeElement.classList.remove('used');
+        }
+        
+        // Remove from placements
+        delete this.currentPlacements[position];
+        
+        this.placedCount--;
+        this.updateStats();
+        this.saveGameState();
+        this.showFeedback('Shape removed', 'info');
+    }
+    
+    restoreState() {
+        // Restore placed shapes from saved state
+        for (const [position, placement] of Object.entries(this.currentPlacements)) {
+            const cell = document.querySelector(`[data-position="${position}"]`);
+            const shapeElement = document.querySelector(`[data-shape-id="${placement.shapeId}"]`);
+            
+            if (cell && shapeElement) {
+                this.placeShape(cell, {
+                    shapeId: placement.shapeId,
+                    shapeName: placement.shapeName,
+                    shapeType: placement.shapeType
+                });
+            }
+        }
+    }
+    
+    startTimer() {
+        this.timer = setInterval(() => {
+            const elapsed = Math.floor((new Date() - this.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+            // Check time limit
+            if (elapsed >= gameData.maxTime * 60) {
+                this.timeUp();
+            }
+        }, 1000);
+    }
+    
+    updateStats() {
+        document.getElementById('score').textContent = this.score;
+        document.getElementById('placed-count').textContent = this.placedCount;
+        document.getElementById('remaining-count').textContent = this.totalQuestions - this.placedCount;
+        
+        const progress = (this.placedCount / this.totalQuestions) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+        
+        // Enable submit button if all filled
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = this.placedCount < this.totalQuestions;
+    }
+    
+    setupEventListeners() {
+        document.getElementById('hint-btn').addEventListener('click', () => {
+            this.showHint();
+        });
+        
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if (confirm('Reset the entire game? This will clear all placed shapes.')) {
+                this.resetGame();
+            }
+        });
+        
+        document.getElementById('submit-btn').addEventListener('click', () => {
+            this.submitGame();
+        });
+    }
+    
+    showHint() {
+        // Find first empty question cell and highlight it
+        const emptyCells = document.querySelectorAll('.grid-cell.question:not(.occupied)');
+        if (emptyCells.length > 0) {
+            const cell = emptyCells[0];
+            cell.style.animation = 'pulse 1s infinite';
+            setTimeout(() => {
+                cell.style.animation = '';
+            }, 3000);
+            this.showFeedback('Try placing a shape in the highlighted cell!', 'info');
+        }
+    }
+    
+    resetGame() {
+        // Clear all placements
+        Object.keys(this.currentPlacements).forEach(position => {
+            const cell = document.querySelector(`[data-position="${position}"]`);
+            this.removeShape(cell);
+        });
+        
+        this.score = 0;
+        this.updateStats();
+        this.saveGameState();
+        this.showFeedback('Game reset successfully!', 'warning');
+    }
+    
+    submitGame() {
+        this.completeGame();
+    }
+    
+    completeGame() {
+        clearInterval(this.timer);
+        
+        // Calculate final score
+        this.score = this.placedCount * gameData.pointsPerCorrect;
+        
+        // Show completion modal
+        document.getElementById('final-time').textContent = document.getElementById('timer').textContent;
+        document.getElementById('final-score').textContent = this.score;
+        document.getElementById('accuracy').textContent = '100%';
+        
+        const modal = new bootstrap.Modal(document.getElementById('gameCompleteModal'));
+        modal.show();
+        
+        // Save final state
+        this.saveGameState(true);
+    }
+    
+    timeUp() {
+        clearInterval(this.timer);
+        this.showFeedback('Time\'s up! Game over.', 'danger');
+        // Could show different modal or auto-submit
+    }
+    
+    saveGameState(completed = false) {
+        const gameState = {
+            current_state: this.currentPlacements,
+            score: this.score,
+            placed_count: this.placedCount,
+            status: completed ? 'completed' : 'in_progress'
+        };
+        
+        // Send to server
+        fetch(`/games/api/shape-games/${gameData.gameId}/save-state/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(gameState)
+        }).catch(error => {
+            console.error('Failed to save game state:', error);
+        });
+    }
+    
+    showFeedback(message, type = 'info') {
+        const container = document.getElementById('feedback-container');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show feedback-message`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        container.appendChild(alert);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 3000);
+    }
+}
+
+// Add CSRF token
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Initialize game when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add CSRF token to page
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    document.body.appendChild(csrfInput);
+    
+    // Initialize game
+    new ShapeGameController();
+});
+
+// Add CSS animation for pulse effect
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

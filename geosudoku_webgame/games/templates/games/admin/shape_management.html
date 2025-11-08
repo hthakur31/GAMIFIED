@@ -1,0 +1,168 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block shape_game_css %}
+<style>
+.admin-nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-nav .nav-link:hover,
+.admin-nav .nav-link.active {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.shape-card {
+    transition: transform 0.2s ease;
+}
+
+.shape-card:hover {
+    transform: translateY(-2px);
+}
+
+.shape-preview {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    background: #f8f9fa;
+}
+
+.svg-preview {
+    max-width: 50px;
+    max-height: 50px;
+}
+</style>
+{% endblock %}
+
+{% block shape_game_content %}
+<div class="admin-nav">
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark p-0">
+            <span class="navbar-brand mb-0 h1">🎮 Game Admin Panel</span>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="{% url 'games:manage_shapes' %}">Shapes</a>
+                <a class="nav-link" href="{% url 'games:manage_templates' %}">Templates</a>
+                <a class="nav-link" href="{% url 'games:manage_shape_games' %}">Games</a>
+                <a class="nav-link" href="/admin/">Django Admin</a>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-shapes"></i> {{ page_title }}</h2>
+                <a href="{% url 'games:shape_upload' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Upload New Shape
+                </a>
+            </div>
+
+            {% if shapes %}
+                <div class="row">
+                    {% for shape in shapes %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card shape-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="shape-preview me-3">
+                                            {% if shape.svg_data %}
+                                                <div class="svg-preview" style="color: {{ shape.color }};">
+                                                    {{ shape.svg_data|safe }}
+                                                </div>
+                                            {% else %}
+                                                <i class="fas fa-image text-muted"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h5 class="card-title mb-1">{{ shape.name }}</h5>
+                                            <div class="text-muted small">
+                                                <span class="badge bg-secondary me-1">{{ shape.shape_type }}</span>
+                                                <span class="badge" style="background-color: {{ shape.color }}; color: white;">{{ shape.color }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row text-center small text-muted mb-3">
+                                        <div class="col">
+                                            <strong>Created</strong><br>
+                                            {{ shape.created_at|date:"M d, Y" }}
+                                        </div>
+                                        <div class="col">
+                                            <strong>By</strong><br>
+                                            {{ shape.created_by.username }}
+                                        </div>
+                                        <div class="col">
+                                            <strong>Status</strong><br>
+                                            {% if shape.is_active %}
+                                                <span class="text-success">Active</span>
+                                            {% else %}
+                                                <span class="text-danger">Inactive</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{% url 'games:shape_edit' shape.id %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{% url 'games:shape_delete' shape.id %}" 
+                                           class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shapes fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No shapes available</h4>
+                    <p class="text-muted">Start by uploading your first shape!</p>
+                    <a href="{% url 'games:shape_upload' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Upload Shape
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects for shape cards
+    const shapeCards = document.querySelectorAll('.shape-card');
+    shapeCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
+{% endblock %}

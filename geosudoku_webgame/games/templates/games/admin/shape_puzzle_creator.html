@@ -1,0 +1,983 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}Create Shape Game - GeoSudoku{% endblock %}
+
+{% block shape_game_css %}
+<style>
+.admin-nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-nav .nav-link:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-creator {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.grid-size-selector {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.grid-option {
+    background: white;
+    border: 3px solid #e9ecef;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.grid-option:hover {
+    border-color: #007bff;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+}
+
+.grid-option.selected {
+    border-color: #007bff;
+    background: #e3f2fd;
+}
+
+.grid-size-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.grid-preview {
+    display: grid;
+    gap: 3px;
+    background-color: #333;
+    padding: 10px;
+    border-radius: 0.5rem;
+    justify-content: center;
+    margin: 1rem auto;
+    max-width: fit-content;
+}
+
+.preview-cell {
+    width: 30px;
+    height: 30px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.shape-count-info {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.puzzle-builder {
+    display: none;
+    margin-top: 2rem;
+}
+
+.puzzle-builder.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.game-grid {
+    display: grid;
+    gap: 5px;
+    background-color: #333;
+    padding: 20px;
+    border-radius: 0.75rem;
+    justify-content: center;
+    margin: 2rem auto;
+    max-width: fit-content;
+}
+
+.grid-cell {
+    width: 60px;
+    height: 60px;
+    background-color: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.grid-cell:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.grid-cell.question {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.grid-cell.filled {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.available-items {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 0.75rem;
+    margin: 2rem 0;
+}
+
+.item-option {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.item-option:active {
+    cursor: grabbing;
+}
+
+.item-option:hover {
+    border-color: #007bff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.item-option.selected {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.item-option.question-mark {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.shape-svg {
+    width: 40px;
+    height: 40px;
+}
+
+.answer-definition {
+    background: #e8f5e8;
+    border: 2px solid #28a745;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    display: none;
+}
+
+.answer-definition.active {
+    display: block;
+}
+
+.answer-grid {
+    display: grid;
+    gap: 3px;
+    background-color: #333;
+    padding: 15px;
+    border-radius: 0.5rem;
+    justify-content: center;
+    margin: 1rem auto;
+    max-width: fit-content;
+}
+
+.answer-cell {
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.answer-cell.question {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    cursor: pointer;
+}
+
+.answer-cell.question:hover {
+    background-color: #ffc107;
+    color: white;
+}
+
+.answer-cell.answered {
+    background-color: #d4edda;
+    border-color: #28a745;
+}
+
+.game-info {
+    background: #e3f2fd;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.progress-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.step {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    background: #007bff;
+    color: white;
+}
+
+.step.completed {
+    background: #28a745;
+    color: white;
+}
+
+.step-line {
+    width: 50px;
+    height: 2px;
+    background: #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.step-line.completed {
+    background: #28a745;
+}
+</style>
+{% endblock %}
+
+{% block shape_game_content %}
+<div class="admin-nav">
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark p-0">
+            <span class="navbar-brand mb-0 h1">🎮 Shape Puzzle Creator</span>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'games:manage_shapes' %}">Shapes</a>
+                <a class="nav-link" href="{% url 'games:manage_templates' %}">Templates</a>
+                <a class="nav-link active" href="{% url 'games:manage_shape_games' %}">Games</a>
+                <a class="nav-link" href="/admin/">Django Admin</a>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Progress Indicator -->
+    <div class="progress-indicator">
+        <div class="step active" id="step-1">1</div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step" id="step-2">2</div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step" id="step-3">3</div>
+        <div class="step-line" id="line-3"></div>
+        <div class="step" id="step-4">4</div>
+    </div>
+
+    <!-- Step 1: Grid Size Selection -->
+    <div class="puzzle-creator" id="grid-selection">
+        <h2 class="text-center mb-4">Step 1: Choose Grid Size</h2>
+        <p class="text-center text-muted mb-4">Select the grid size for your shape puzzle</p>
+        
+        <div class="grid-size-selector">
+            <div class="grid-option" data-size="3" onclick="selectGridSize(3)">
+                <div class="grid-size-title">3×3 Grid</div>
+                <div class="grid-preview" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                </div>
+                <div class="shape-count-info">3 Shapes + 1 Question Mark</div>
+            </div>
+            
+            <div class="grid-option" data-size="4" onclick="selectGridSize(4)">
+                <div class="grid-size-title">4×4 Grid</div>
+                <div class="grid-preview" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                </div>
+                <div class="shape-count-info">4 Shapes + 1 Question Mark</div>
+            </div>
+            
+            <div class="grid-option" data-size="5" onclick="selectGridSize(5)">
+                <div class="grid-size-title">5×5 Grid</div>
+                <div class="grid-preview" style="grid-template-columns: repeat(5, 1fr);">
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                    <div class="preview-cell"></div>
+                </div>
+                <div class="shape-count-info">5 Shapes + 1 Question Mark</div>
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <button class="btn btn-primary btn-lg" id="continue-to-design" onclick="continueToDesign()" disabled>
+                <i class="fas fa-arrow-right"></i> Continue to Design
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: Puzzle Design -->
+    <div class="puzzle-builder" id="puzzle-design">
+        <h2 class="text-center mb-4">Step 2: Design Your Puzzle</h2>
+        <p class="text-center text-muted mb-4">Drag shapes and question marks to create your puzzle</p>
+        
+        <div class="game-info">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-info-circle"></i> Puzzle Information</h5>
+                    <p><strong>Grid Size:</strong> <span id="selected-grid-size">-</span></p>
+                    <p><strong>Available Items:</strong> <span id="available-items-count">-</span></p>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-lightbulb"></i> Instructions</h5>
+                    <p>• Drag items from the bottom to the grid</p>
+                    <p>• Use question marks for cells users need to fill</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Grid -->
+        <div class="game-grid" id="puzzle-grid">
+            <!-- Grid cells will be generated by JavaScript -->
+        </div>
+        
+        <!-- Available Items -->
+        <div class="available-items" id="available-items">
+            <!-- Items will be loaded by JavaScript -->
+        </div>
+        
+        <div class="text-center">
+            <button class="btn btn-secondary me-2" onclick="backToGridSelection()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <button class="btn btn-primary btn-lg" id="continue-to-answers" onclick="continueToAnswers()" disabled>
+                <i class="fas fa-arrow-right"></i> Set Answers
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 3: Answer Definition -->
+    <div class="answer-definition" id="answer-definition">
+        <h2 class="text-center mb-4">Step 3: Define Correct Answers</h2>
+        <p class="text-center text-muted mb-4">Click on each question mark cell and select the correct shape</p>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Your Puzzle</h5>
+                <div class="answer-grid" id="answer-grid">
+                    <!-- Answer grid will be generated -->
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h5 class="text-center mb-3">Select Correct Shape</h5>
+                <div class="available-items" id="answer-shapes">
+                    <!-- Available shapes for answers -->
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Selected Cell:</strong> <span id="selected-cell-info">Click on a question mark cell to set its answer</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <button class="btn btn-secondary me-2" onclick="backToPuzzleDesign()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <button class="btn btn-primary btn-lg" id="continue-to-save" onclick="continueToSave()" disabled>
+                <i class="fas fa-arrow-right"></i> Save Puzzle
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 4: Save Puzzle -->
+    <div class="puzzle-creator" id="save-puzzle" style="display: none;">
+        <h2 class="text-center mb-4">Step 4: Save Your Puzzle</h2>
+        <p class="text-center text-muted mb-4">Give your puzzle a name and save it as a game level</p>
+        
+        <form id="puzzle-save-form" method="post">
+            {% csrf_token %}
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="puzzle-name" class="form-label"><strong>Puzzle Name</strong></label>
+                        <input type="text" class="form-control" id="puzzle-name" name="puzzle_name" required 
+                               placeholder="Enter a name for your puzzle">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="puzzle-description" class="form-label"><strong>Description</strong></label>
+                        <textarea class="form-control" id="puzzle-description" name="puzzle_description" rows="3"
+                                  placeholder="Optional description for your puzzle"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="puzzle-difficulty" class="form-label"><strong>Difficulty Level</strong></label>
+                        <select class="form-select" id="puzzle-difficulty" name="puzzle_difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Hidden fields for puzzle data -->
+                    <input type="hidden" id="grid-size-data" name="grid_size">
+                    <input type="hidden" id="grid-data" name="grid_data">
+                    <input type="hidden" id="solution-data" name="solution_data">
+                    <input type="hidden" id="shapes-data" name="shapes_used">
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button type="button" class="btn btn-secondary me-2" onclick="backToAnswers()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save"></i> Create Puzzle Game
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Game state
+let gameState = {
+    selectedGridSize: null,
+    gridData: [],
+    answerData: {},
+    selectedShapes: [],
+    availableShapes: [],
+    currentStep: 1,
+    selectedCell: null,
+    selectedAnswerShape: null
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadAvailableShapes();
+});
+
+// Load available shapes from server
+async function loadAvailableShapes() {
+    try {
+        const response = await fetch('/api/shapes/');
+        gameState.availableShapes = await response.json();
+    } catch (error) {
+        console.error('Failed to load shapes:', error);
+        // Fallback shapes
+        gameState.availableShapes = [
+            {id: 1, name: 'Red Circle', shape_type: 'circle', color: '#dc3545', svg_data: '<circle cx="20" cy="20" r="16" fill="currentColor"/>'},
+            {id: 2, name: 'Blue Square', shape_type: 'square', color: '#007bff', svg_data: '<rect x="4" y="4" width="32" height="32" fill="currentColor"/>'},
+            {id: 3, name: 'Green Triangle', shape_type: 'triangle', color: '#28a745', svg_data: '<polygon points="20,4 36,36 4,36" fill="currentColor"/>'},
+            {id: 4, name: 'Orange Diamond', shape_type: 'diamond', color: '#fd7e14', svg_data: '<polygon points="20,4 36,20 20,36 4,20" fill="currentColor"/>'},
+            {id: 5, name: 'Purple Star', shape_type: 'star', color: '#6f42c1', svg_data: '<polygon points="20,2 24,14 36,14 27,22 31,34 20,28 9,34 13,22 4,14 16,14" fill="currentColor"/>'}
+        ];
+    }
+}
+
+// Step 1: Grid Size Selection
+function selectGridSize(size) {
+    gameState.selectedGridSize = size;
+    
+    // Update UI
+    document.querySelectorAll('.grid-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    document.querySelector(`[data-size="${size}"]`).classList.add('selected');
+    
+    // Enable continue button
+    document.getElementById('continue-to-design').disabled = false;
+    
+    // Select appropriate shapes based on grid size
+    selectShapesForGrid(size);
+}
+
+function selectShapesForGrid(gridSize) {
+    // Select the first N shapes based on grid size
+    gameState.selectedShapes = gameState.availableShapes.slice(0, gridSize);
+}
+
+function continueToDesign() {
+    if (!gameState.selectedGridSize) return;
+    
+    updateProgressStep(2);
+    showStep('puzzle-design');
+    setupPuzzleDesign();
+}
+
+// Step 2: Puzzle Design
+function setupPuzzleDesign() {
+    const size = gameState.selectedGridSize;
+    
+    // Update info
+    document.getElementById('selected-grid-size').textContent = `${size}×${size}`;
+    document.getElementById('available-items-count').textContent = `${size} shapes + 1 question mark`;
+    
+    // Setup grid
+    setupGrid(size);
+    setupAvailableItems();
+}
+
+function setupGrid(size) {
+    const grid = document.getElementById('puzzle-grid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    
+    gameState.gridData = Array(size).fill().map(() => Array(size).fill(null));
+    
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            // Add drop events
+            setupDropEvents(cell, row, col);
+            
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function setupAvailableItems() {
+    const container = document.getElementById('available-items');
+    container.innerHTML = '';
+    
+    // Add question mark
+    const questionMark = document.createElement('div');
+    questionMark.className = 'item-option question-mark';
+    questionMark.textContent = '?';
+    questionMark.draggable = true;
+    questionMark.dataset.type = 'question';
+    setupDragEvents(questionMark);
+    container.appendChild(questionMark);
+    
+    // Add shapes
+    gameState.selectedShapes.forEach(shape => {
+        const shapeElement = document.createElement('div');
+        shapeElement.className = 'item-option';
+        shapeElement.draggable = true;
+        shapeElement.dataset.type = 'shape';
+        shapeElement.dataset.shapeId = shape.id;
+        
+        shapeElement.innerHTML = `
+            <svg class="shape-svg" viewBox="0 0 40 40" style="color: ${shape.color}">
+                ${shape.svg_data}
+            </svg>
+        `;
+        
+        setupDragEvents(shapeElement);
+        container.appendChild(shapeElement);
+    });
+}
+
+function setupDragEvents(element) {
+    element.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+            type: this.dataset.type,
+            shapeId: this.dataset.shapeId
+        }));
+    });
+}
+
+function setupDropEvents(cell, row, col) {
+    cell.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    
+    cell.addEventListener('drop', function(e) {
+        e.preventDefault();
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        placeCellItem(row, col, data);
+    });
+    
+    cell.addEventListener('click', function() {
+        // Allow clearing cells
+        if (this.innerHTML !== '') {
+            clearCell(row, col);
+        }
+    });
+}
+
+function placeCellItem(row, col, data) {
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    
+    if (data.type === 'question') {
+        cell.innerHTML = '?';
+        cell.className = 'grid-cell question';
+        gameState.gridData[row][col] = { type: 'question' };
+    } else if (data.type === 'shape') {
+        const shape = gameState.selectedShapes.find(s => s.id == data.shapeId);
+        if (shape) {
+            cell.innerHTML = `<svg class="shape-svg" viewBox="0 0 40 40" style="color: ${shape.color}">${shape.svg_data}</svg>`;
+            cell.className = 'grid-cell filled';
+            gameState.gridData[row][col] = { type: 'shape', shapeId: shape.id };
+        }
+    }
+    
+    checkDesignCompletion();
+}
+
+function clearCell(row, col) {
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    cell.innerHTML = '';
+    cell.className = 'grid-cell';
+    gameState.gridData[row][col] = null;
+    
+    checkDesignCompletion();
+}
+
+function checkDesignCompletion() {
+    let hasQuestions = false;
+    let hasShapes = false;
+    
+    for (let row = 0; row < gameState.selectedGridSize; row++) {
+        for (let col = 0; col < gameState.selectedGridSize; col++) {
+            const cellData = gameState.gridData[row][col];
+            if (cellData) {
+                if (cellData.type === 'question') hasQuestions = true;
+                if (cellData.type === 'shape') hasShapes = true;
+            }
+        }
+    }
+    
+    document.getElementById('continue-to-answers').disabled = !(hasQuestions && hasShapes);
+}
+
+function continueToAnswers() {
+    updateProgressStep(3);
+    showStep('answer-definition');
+    setupAnswerDefinition();
+}
+
+// Step 3: Answer Definition
+function setupAnswerDefinition() {
+    setupAnswerGrid();
+    setupAnswerShapes();
+}
+
+function setupAnswerGrid() {
+    const grid = document.getElementById('answer-grid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${gameState.selectedGridSize}, 1fr)`;
+    
+    for (let row = 0; row < gameState.selectedGridSize; row++) {
+        for (let col = 0; col < gameState.selectedGridSize; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'answer-cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            const cellData = gameState.gridData[row][col];
+            if (cellData) {
+                if (cellData.type === 'question') {
+                    cell.innerHTML = '?';
+                    cell.classList.add('question');
+                    cell.addEventListener('click', () => selectAnswerCell(row, col));
+                } else if (cellData.type === 'shape') {
+                    const shape = gameState.selectedShapes.find(s => s.id == cellData.shapeId);
+                    if (shape) {
+                        cell.innerHTML = `<svg viewBox="0 0 40 40" style="color: ${shape.color}; width: 30px; height: 30px;">${shape.svg_data}</svg>`;
+                    }
+                }
+            }
+            
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function setupAnswerShapes() {
+    const container = document.getElementById('answer-shapes');
+    container.innerHTML = '';
+    
+    gameState.selectedShapes.forEach(shape => {
+        const shapeElement = document.createElement('div');
+        shapeElement.className = 'item-option';
+        shapeElement.dataset.shapeId = shape.id;
+        
+        shapeElement.innerHTML = `
+            <svg class="shape-svg" viewBox="0 0 40 40" style="color: ${shape.color}">
+                ${shape.svg_data}
+            </svg>
+        `;
+        
+        shapeElement.addEventListener('click', () => selectAnswerShape(shape.id));
+        container.appendChild(shapeElement);
+    });
+}
+
+function selectAnswerCell(row, col) {
+    // Clear previous selection
+    document.querySelectorAll('.answer-cell').forEach(cell => {
+        cell.classList.remove('selected-for-answer');
+    });
+    
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    cell.classList.add('selected-for-answer');
+    
+    gameState.selectedCell = { row, col };
+    document.getElementById('selected-cell-info').textContent = `Setting answer for cell (${row + 1}, ${col + 1})`;
+}
+
+function selectAnswerShape(shapeId) {
+    if (!gameState.selectedCell) {
+        alert('Please select a question mark cell first');
+        return;
+    }
+    
+    const { row, col } = gameState.selectedCell;
+    const cellKey = `${row}-${col}`;
+    gameState.answerData[cellKey] = shapeId;
+    
+    // Update visual feedback
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    const shape = gameState.selectedShapes.find(s => s.id == shapeId);
+    
+    cell.innerHTML = `
+        <div style="position: relative;">
+            <span style="position: absolute; top: -5px; left: -5px; font-size: 0.7em; color: #ffc107;">?</span>
+            <svg viewBox="0 0 40 40" style="color: ${shape.color}; width: 30px; height: 30px;">
+                ${shape.svg_data}
+            </svg>
+        </div>
+    `;
+    cell.classList.add('answered');
+    cell.classList.remove('selected-for-answer');
+    
+    // Clear selection
+    gameState.selectedCell = null;
+    document.getElementById('selected-cell-info').textContent = 'Click on a question mark cell to set its answer';
+    
+    checkAnswersCompletion();
+}
+
+function checkAnswersCompletion() {
+    let questionCount = 0;
+    let answeredCount = 0;
+    
+    for (let row = 0; row < gameState.selectedGridSize; row++) {
+        for (let col = 0; col < gameState.selectedGridSize; col++) {
+            const cellData = gameState.gridData[row][col];
+            if (cellData && cellData.type === 'question') {
+                questionCount++;
+                const cellKey = `${row}-${col}`;
+                if (gameState.answerData[cellKey]) {
+                    answeredCount++;
+                }
+            }
+        }
+    }
+    
+    document.getElementById('continue-to-save').disabled = answeredCount < questionCount;
+}
+
+function continueToSave() {
+    updateProgressStep(4);
+    showStep('save-puzzle');
+    prepareSaveData();
+}
+
+// Step 4: Save Puzzle
+function prepareSaveData() {
+    document.getElementById('grid-size-data').value = gameState.selectedGridSize;
+    document.getElementById('grid-data').value = JSON.stringify(gameState.gridData);
+    document.getElementById('solution-data').value = JSON.stringify(gameState.answerData);
+    document.getElementById('shapes-data').value = JSON.stringify(gameState.selectedShapes.map(s => s.id));
+}
+
+// Form submission
+document.getElementById('puzzle-save-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('/games/create-shape-puzzle/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert('Puzzle created successfully!');
+            window.location.href = '/manage/shape-games/';
+        } else {
+            const error = await response.json();
+            alert('Error creating puzzle: ' + (error.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error creating puzzle: ' + error.message);
+    }
+});
+
+// Navigation functions
+function backToGridSelection() {
+    updateProgressStep(1);
+    showStep('grid-selection');
+}
+
+function backToPuzzleDesign() {
+    updateProgressStep(2);
+    showStep('puzzle-design');
+}
+
+function backToAnswers() {
+    updateProgressStep(3);
+    showStep('answer-definition');
+}
+
+// Utility functions
+function updateProgressStep(step) {
+    gameState.currentStep = step;
+    
+    for (let i = 1; i <= 4; i++) {
+        const stepElement = document.getElementById(`step-${i}`);
+        const lineElement = document.getElementById(`line-${i}`);
+        
+        if (i < step) {
+            stepElement.className = 'step completed';
+            if (lineElement) lineElement.className = 'step-line completed';
+        } else if (i === step) {
+            stepElement.className = 'step active';
+            if (lineElement) lineElement.className = 'step-line';
+        } else {
+            stepElement.className = 'step';
+            if (lineElement) lineElement.className = 'step-line';
+        }
+    }
+}
+
+function showStep(stepId) {
+    const steps = ['grid-selection', 'puzzle-design', 'answer-definition', 'save-puzzle'];
+    
+    steps.forEach(id => {
+        const element = document.getElementById(id);
+        if (id === stepId) {
+            element.style.display = 'block';
+            if (element.classList.contains('puzzle-builder')) {
+                element.classList.add('active');
+            }
+        } else {
+            element.style.display = 'none';
+            if (element.classList.contains('puzzle-builder')) {
+                element.classList.remove('active');
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

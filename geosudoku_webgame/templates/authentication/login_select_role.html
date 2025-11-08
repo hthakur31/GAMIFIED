@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome Back - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.login-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.login-card {
+    border-radius: 25px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15);
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.login-header {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    padding: 3rem 2rem;
+    text-align: center;
+    color: white;
+}
+
+.login-header h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    opacity: 0.95;
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+.role-selection-area {
+    padding: 3rem 2rem;
+}
+
+.role-option {
+    border: 3px solid #e9ecef;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    background: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.role-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+}
+
+.role-option:hover::before {
+    left: 100%;
+}
+
+.role-option:hover {
+    border-color: #4e73df;
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(78, 115, 223, 0.2);
+}
+
+.role-option.selected {
+    border-color: #4e73df;
+    background: linear-gradient(135deg, rgba(78, 115, 223, 0.1) 0%, rgba(34, 74, 190, 0.1) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(78, 115, 223, 0.25);
+}
+
+.role-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+    text-align: center;
+}
+
+.role-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.role-description {
+    color: #6c757d;
+    text-align: center;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.role-features {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.role-features ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.role-features li {
+    padding: 0.25rem 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.role-features li:before {
+    content: "→";
+    color: #4e73df;
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.continue-btn {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 1rem 3rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(78, 115, 223, 0.3);
+    font-size: 1.1rem;
+}
+
+.continue-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(78, 115, 223, 0.4);
+}
+
+.continue-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.radio-input {
+    display: none;
+}
+
+.welcome-message {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.welcome-message i {
+    color: #4e73df;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .login-header h1 {
+        font-size: 2.2rem;
+    }
+    
+    .role-option {
+        padding: 1.5rem;
+    }
+    
+    .role-icon {
+        font-size: 3rem;
+    }
+    
+    .role-title {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="mb-3">
+                            <i class="fas fa-sign-in-alt fa-3x"></i>
+                        </div>
+                        <h1>Welcome Back</h1>
+                        <p>Please select your login type:</p>
+                    </div>
+                    
+                    <div class="role-selection-area">
+                        <form method="post" id="loginRoleForm">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="role-option" data-role="user">
+                                        <input type="radio" name="role" value="user" class="radio-input" id="login-user">
+                                        <div class="role-icon text-primary">
+                                            🎮
+                                        </div>
+                                        <h3 class="role-title">Login as User</h3>
+                                        <p class="role-description">
+                                            Access your player account and game progress
+                                        </p>
+                                        <div class="role-features">
+                                            <ul>
+                                                <li>Access your saved games</li>
+                                                <li>View progress & statistics</li>
+                                                <li>Continue puzzle challenges</li>
+                                                <li>Check achievements</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="role-option" data-role="admin">
+                                        <input type="radio" name="role" value="admin" class="radio-input" id="login-admin">
+                                        <div class="role-icon text-warning">
+                                            👑
+                                        </div>
+                                        <h3 class="role-title">Login as Admin</h3>
+                                        <p class="role-description">
+                                            Access administrative dashboard and controls
+                                        </p>
+                                        <div class="role-features">
+                                            <ul>
+                                                <li>Manage game content</li>
+                                                <li>Monitor user activity</li>
+                                                <li>Create shapes & templates</li>
+                                                <li>System administration</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn continue-btn text-white" id="continueBtn" disabled>
+                                    <i class="fas fa-arrow-right me-2"></i>Continue to Login Page
+                                </button>
+                            </div>
+                            
+                            <div class="welcome-message">
+                                <i class="fas fa-hand-wave d-block"></i>
+                                <strong>Welcome back to GeoSudoku!</strong>
+                                <div class="small text-muted mt-1">
+                                    Select your account type to continue to the login form
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div class="text-center mt-4">
+                            <p class="text-muted">Don't have an account?</p>
+                            <a href="{% url 'authentication:register_select_role' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleOptions = document.querySelectorAll('.role-option');
+    const continueBtn = document.getElementById('continueBtn');
+    const form = document.getElementById('loginRoleForm');
+    
+    roleOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const role = this.dataset.role;
+            const radioInput = document.getElementById(`login-${role}`);
+            
+            // Remove selected class from all options
+            roleOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            
+            // Check the radio button
+            radioInput.checked = true;
+            
+            // Enable continue button
+            continueBtn.disabled = false;
+            continueBtn.innerHTML = '<i class="fas fa-arrow-right me-2"></i>Continue to Login Page';
+        });
+    });
+    
+    // Form submission with loading state
+    form.addEventListener('submit', function() {
+        continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+        continueBtn.disabled = true;
+    });
+    
+    // Add hover effects
+    roleOptions.forEach(option => {
+        option.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('selected')) {
+                this.style.borderColor = '#4e73df';
+            }
+        });
+        
+        option.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('selected')) {
+                this.style.borderColor = '#e9ecef';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

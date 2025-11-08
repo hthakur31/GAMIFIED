@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Leaderboard - GeoSudoku{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-trophy text-warning"></i> Leaderboard</h2>
+    <div class="difficulty-filter">
+        <div class="btn-group" role="group">
+            <a href="?difficulty=easy" class="btn {% if selected_difficulty == 'easy' %}btn-success{% else %}btn-outline-success{% endif %}">Easy</a>
+            <a href="?difficulty=medium" class="btn {% if selected_difficulty == 'medium' %}btn-warning{% else %}btn-outline-warning{% endif %}">Medium</a>
+            <a href="?difficulty=hard" class="btn {% if selected_difficulty == 'hard' %}btn-danger{% else %}btn-outline-danger{% endif %}">Hard</a>
+            <a href="?difficulty=expert" class="btn {% if selected_difficulty == 'expert' %}btn-dark{% else %}btn-outline-dark{% endif %}">Expert</a>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="fas fa-medal"></i> 
+            Top Players - {{ selected_difficulty|title }} Difficulty
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if leaderboard_entries %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="60">Rank</th>
+                            <th>Player</th>
+                            <th>Best Score</th>
+                            <th>Best Time</th>
+                            <th>Puzzle</th>
+                            <th>Achieved</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in leaderboard_entries %}
+                            <tr {% if entry.user == user %}class="table-warning"{% endif %}>
+                                <td>
+                                    {% if forloop.counter == 1 %}
+                                        <i class="fas fa-trophy text-warning fa-lg"></i>
+                                    {% elif forloop.counter == 2 %}
+                                        <i class="fas fa-medal text-secondary fa-lg"></i>
+                                    {% elif forloop.counter == 3 %}
+                                        <i class="fas fa-medal text-warning fa-lg" style="color: #CD7F32 !important;"></i>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ forloop.counter }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2">
+                                            {% if entry.user.avatar %}
+                                                <img src="{{ entry.user.avatar.url }}" alt="Avatar" class="rounded-circle" width="30" height="30">
+                                            {% else %}
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <strong>{{ entry.user.username }}</strong>
+                                            {% if entry.user == user %}
+                                                <span class="badge bg-info ms-1">You</span>
+                                            {% endif %}
+                                            <div class="small text-muted">
+                                                {{ entry.user.games_won }} wins, {{ entry.user.win_rate }}% rate
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong class="text-success">{{ entry.best_score }}</strong>
+                                </td>
+                                <td>
+                                    <span class="text-info">{{ entry.best_time }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'games:play_puzzle' entry.puzzle.id %}" class="text-decoration-none">
+                                        <i class="fas fa-puzzle-piece"></i> #{{ entry.puzzle.id }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ entry.achieved_at|timesince }} ago</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- User's current ranking -->
+            {% if user.is_authenticated %}
+                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-user"></i> Your Stats</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Total Score:</strong> {{ user.total_score }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Games Played:</strong> {{ user.games_played }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Games Won:</strong> {{ user.games_won }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Win Rate:</strong> {{ user.win_rate }}%
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                <h5>No scores yet for {{ selected_difficulty }} difficulty!</h5>
+                <p class="text-muted">Be the first to complete a {{ selected_difficulty }} puzzle and claim the top spot!</p>
+                <a href="{% url 'games:puzzle_list' %}?difficulty={{ selected_difficulty }}" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Start Playing
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Global Leaderboard Summary -->
+{% if user.is_authenticated %}
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Your Progress</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="progressChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-star"></i> Recent Achievements</h6>
+                </div>
+                <div class="card-body">
+                    {% if user.achievements.all %}
+                        {% for achievement in user.achievements.all|slice:":3" %}
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2" style="font-size: 1.5em;">{{ achievement.icon }}</span>
+                                <div>
+                                    <strong>{{ achievement.name }}</strong>
+                                    <div class="small text-muted">{{ achievement.earned_at|timesince }} ago</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">
+                            <i class="fas fa-medal fa-2x mb-2"></i><br>
+                            No achievements yet!<br>
+                            <small>Complete puzzles to earn achievements.</small>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table tbody tr:hover {
+    background-color: rgba(0,123,255,0.1);
+}
+
+.user-avatar img, .user-avatar div {
+    object-fit: cover;
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-radius: 0.375rem 0 0 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple progress chart (you could use Chart.js for more advanced charts)
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('progressChart');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        
+        // Simple bar chart representation
+        ctx.fillStyle = '#007bff';
+        ctx.fillRect(50, 150, 60, 40);  // Easy
+        ctx.fillStyle = '#ffc107';
+        ctx.fillRect(130, 130, 60, 60); // Medium
+        ctx.fillStyle = '#dc3545';
+        ctx.fillRect(210, 110, 60, 80); // Hard
+        ctx.fillStyle = '#343a40';
+        ctx.fillRect(290, 90, 60, 100); // Expert
+        
+        // Labels
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.fillText('Easy', 65, 205);
+        ctx.fillText('Med', 145, 205);
+        ctx.fillText('Hard', 225, 205);
+        ctx.fillText('Expert', 300, 205);
+    }
+});
+</script>
+{% endblock %}

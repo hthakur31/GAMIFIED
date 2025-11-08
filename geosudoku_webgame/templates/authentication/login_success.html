@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+
+{% block title %}Login Successful - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.success-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.success-card {
+    border-radius: 25px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15);
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.98);
+    text-align: center;
+}
+
+.success-header {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    padding: 3rem 2rem;
+    color: white;
+}
+
+.success-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    animation: checkmark 0.8s ease-in-out;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.success-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.success-subtitle {
+    opacity: 0.95;
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.5rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    margin-top: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.role-badge.user {
+    background: rgba(13, 110, 253, 0.2);
+    color: #0d6efd;
+    border: 2px solid rgba(13, 110, 253, 0.3);
+}
+
+.role-badge.admin {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+.success-content {
+    padding: 3rem 2rem;
+}
+
+.redirect-info {
+    background: linear-gradient(135deg, rgba(78, 115, 223, 0.1) 0%, rgba(34, 74, 190, 0.1) 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(78, 115, 223, 0.2);
+}
+
+.redirect-info h4 {
+    color: #4e73df;
+    margin-bottom: 1rem;
+}
+
+.countdown-timer {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4e73df;
+    margin: 1rem 0;
+}
+
+.quick-actions {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.quick-actions h5 {
+    color: #4e73df;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.action-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.action-icon {
+    background: #4e73df;
+    color: white;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-right: 1rem;
+}
+
+.action-content h6 {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.action-content p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.continue-btn {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 1rem 3rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(78, 115, 223, 0.3);
+    font-size: 1.1rem;
+}
+
+.continue-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(78, 115, 223, 0.4);
+}
+
+.loading-animation {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid rgba(78, 115, 223, 0.3);
+    border-radius: 50%;
+    border-top-color: #4e73df;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background-color: rgba(78, 115, 223, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    width: 0%;
+    animation: progress 5s linear;
+}
+
+@keyframes progress {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+@media (max-width: 768px) {
+    .success-title {
+        font-size: 2rem;
+    }
+    
+    .success-content {
+        padding: 2rem 1.5rem;
+    }
+    
+    .redirect-info, .quick-actions {
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+                <div class="success-card">
+                    <div class="success-header">
+                        <div class="success-icon">
+                            ✅
+                        </div>
+                        
+                        {% if success_data.role == 'admin' %}
+                            <h1 class="success-title">Admin login successful!</h1>
+                            <p class="success-subtitle">Redirecting to Admin Dashboard…</p>
+                            <div class="role-badge admin">
+                                👑 Administrator Access
+                            </div>
+                        {% else %}
+                            <h1 class="success-title">Login successful!</h1>
+                            <p class="success-subtitle">Redirecting to User Dashboard…</p>
+                            <div class="role-badge user">
+                                🎮 Player Access
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="success-content">
+                        <!-- Redirect Information -->
+                        <div class="redirect-info">
+                            <h4>
+                                <i class="fas fa-rocket me-2"></i>Welcome back, {{ success_data.name }}!
+                            </h4>
+                            <p class="text-muted mb-2">
+                                You will be automatically redirected in:
+                            </p>
+                            <div class="countdown-timer" id="countdown">5</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions Preview -->
+                        <div class="quick-actions">
+                            <h5>
+                                <i class="fas fa-zap me-2"></i>
+                                {% if success_data.role == 'admin' %}
+                                    Admin Dashboard Preview:
+                                {% else %}
+                                    Player Dashboard Preview:
+                                {% endif %}
+                            </h5>
+                            
+                            {% if success_data.role == 'admin' %}
+                                <div class="action-item">
+                                    <div class="action-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h6>User Management</h6>
+                                        <p>Monitor and manage user accounts, roles, and permissions</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="action-item">
+                                    <div class="action-icon">
+                                        <i class="fas fa-cogs"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h6>Game Administration</h6>
+                                        <p>Create shapes, manage templates, and configure game settings</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="action-item">
+                                    <div class="action-icon">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h6>Analytics & Reports</h6>
+                                        <p>View system statistics, user activity, and performance metrics</p>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="action-item">
+                                    <div class="action-icon">
+                                        <i class="fas fa-gamepad"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h6>Continue Playing</h6>
+                                        <p>Resume your saved puzzles and start new challenges</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="action-item">
+                                    <div class="action-icon">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h6>Achievements</h6>
+                                        <p>Check your progress, unlock new achievements, and climb leaderboards</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="action-item">
+                                    <div class="action-icon">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h6>Your Statistics</h6>
+                                        <p>View your playing history, completion rates, and improvement trends</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Manual Continue Button -->
+                        <div class="text-center">
+                            {% if success_data.role == 'admin' %}
+                                <a href="{% url 'authentication:admin_dashboard' %}" class="btn continue-btn text-white" id="continueBtn">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Go to Admin Dashboard
+                                </a>
+                            {% else %}
+                                <a href="{% url 'games:dashboard' %}" class="btn continue-btn text-white" id="continueBtn">
+                                    <i class="fas fa-play me-2"></i>Go to Player Dashboard
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Additional Information -->
+                        <div class="mt-4 text-center">
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Login session secured
+                            </p>
+                            <small class="text-muted">
+                                {% if success_data.role == 'admin' %}
+                                    You now have full administrative access to the system
+                                {% else %}
+                                    Welcome back! Your game progress has been restored
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const countdownElement = document.getElementById('countdown');
+    const continueBtn = document.getElementById('continueBtn');
+    let countdown = 5;
+    
+    // Countdown timer
+    const timer = setInterval(function() {
+        countdown--;
+        countdownElement.textContent = countdown;
+        
+        if (countdown <= 0) {
+            clearInterval(timer);
+            countdownElement.innerHTML = '<div class="loading-animation"></div>Redirecting...';
+            
+            // Redirect based on role
+            {% if success_data.role == 'admin' %}
+                window.location.href = "{% url 'authentication:admin_dashboard' %}";
+            {% else %}
+                window.location.href = "{% url 'games:dashboard' %}";
+            {% endif %}
+        }
+    }, 1000);
+    
+    // Manual continue button
+    continueBtn.addEventListener('click', function() {
+        clearInterval(timer);
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading Dashboard...';
+    });
+    
+    // Add entrance animation
+    const successCard = document.querySelector('.success-card');
+    successCard.style.opacity = '0';
+    successCard.style.transform = 'translateY(30px)';
+    
+    setTimeout(() => {
+        successCard.style.transition = 'all 0.6s ease';
+        successCard.style.opacity = '1';
+        successCard.style.transform = 'translateY(0)';
+    }, 100);
+});
+</script>
+{% endblock %}

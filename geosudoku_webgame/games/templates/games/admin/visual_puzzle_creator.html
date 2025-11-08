@@ -1,0 +1,1360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Visual Puzzle Creator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .creator-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+    
+    .creator-header {
+        text-align: center;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .creator-title {
+        font-size: 2.5rem;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    .creator-subtitle {
+        color: #7f8c8d;
+        font-size: 1.2rem;
+    }
+    
+    /* Step Navigation */
+    .step-navigation {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .step-item {
+        display: flex;
+        align-items: center;
+        margin: 0 15px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        background-color: #ecf0f1;
+        color: #7f8c8d;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .step-item.active {
+        background-color: #3498db;
+        color: white;
+        transform: scale(1.05);
+    }
+    
+    .step-item.completed {
+        background-color: #27ae60;
+        color: white;
+    }
+    
+    .step-number {
+        background: rgba(255,255,255,0.3);
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-size: 0.9rem;
+    }
+    
+    /* Content Panels */
+    .content-panel {
+        display: none;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .content-panel.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Step 1: Grid Selection */
+    .grid-selection {
+        text-align: center;
+    }
+    
+    .grid-options {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin: 30px 0;
+    }
+    
+    .grid-option {
+        background: white;
+        border: 3px solid #ecf0f1;
+        border-radius: 15px;
+        padding: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .grid-option:hover {
+        border-color: #3498db;
+        transform: translateY(-5px);
+    }
+    
+    .grid-option.selected {
+        border-color: #27ae60;
+        background-color: #f8fff9;
+    }
+    
+    .grid-preview {
+        display: grid;
+        gap: 2px;
+        margin-bottom: 15px;
+        background-color: #34495e;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    
+    .grid-3x3 { grid-template-columns: repeat(3, 25px); grid-template-rows: repeat(3, 25px); }
+    .grid-4x4 { grid-template-columns: repeat(4, 20px); grid-template-rows: repeat(4, 20px); }
+    .grid-5x5 { grid-template-columns: repeat(5, 16px); grid-template-rows: repeat(5, 16px); }
+    
+    .grid-cell-preview {
+        background-color: white;
+        border-radius: 2px;
+    }
+    
+    .grid-label {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .grid-description {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+    
+    /* Step 2: Puzzle Design */
+    .puzzle-workspace {
+        display: flex;
+        gap: 40px;
+        align-items: flex-start;
+    }
+    
+    .grid-area {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .puzzle-grid {
+        display: inline-grid;
+        gap: 3px;
+        background-color: #34495e;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        margin-bottom: 20px;
+    }
+    
+    .grid-cell {
+        background-color: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .grid-cell:hover {
+        border-color: #3498db;
+        transform: scale(1.02);
+    }
+    
+    .grid-cell.question-mark {
+        background-color: #fff3cd;
+        border-color: #ffc107;
+    }
+    
+    .grid-cell.question-mark::before {
+        content: '?';
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #856404;
+    }
+    
+    .grid-cell.has-shape {
+        border-color: #27ae60;
+    }
+    
+    .shape-in-cell {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .shape-in-cell svg {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .cell-controls {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .grid-cell:hover .cell-controls {
+        opacity: 1;
+    }
+    
+    .control-btn {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+        cursor: pointer;
+        margin-left: 2px;
+    }
+    
+    /* Shape Palette */
+    .shapes-area {
+        flex: 1;
+    }
+    
+    .shapes-palette {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 20px;
+        min-height: 400px;
+    }
+    
+    .palette-title {
+        text-align: center;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+    
+    .shapes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 15px;
+    }
+    
+    .shape-item {
+        background: white;
+        border: 2px solid #ecf0f1;
+        border-radius: 10px;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .shape-item:hover {
+        border-color: #3498db;
+        transform: scale(1.05);
+    }
+    
+    .shape-item:active {
+        cursor: grabbing;
+    }
+    
+    .shape-item svg {
+        width: 50px;
+        height: 50px;
+        pointer-events: none;
+    }
+    
+    /* Question mark shape styling */
+    .question-mark-item {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        border-color: #f39c12;
+    }
+    
+    .question-mark-shape {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        pointer-events: none;
+    }
+    
+    /* Question mark in grid cells */
+    .question-mark-in-cell {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: bold;
+        color: #f39c12;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .grid-cell.question-mark {
+        background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%);
+        border-color: #f39c12;
+    }
+    
+    /* Shape count info and messages */
+    .shapes-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 2px dashed #dee2e6;
+    }
+    
+    .shapes-message i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .shape-count-info {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 0.5rem;
+        background: #e3f2fd;
+        border-radius: 6px;
+        margin-top: 1rem;
+        color: #1976d2;
+    }
+    
+    .shape-count-info i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Controls */
+    .grid-controls {
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .control-button {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 500;
+        cursor: pointer;
+        margin: 0 10px;
+        transition: all 0.2s ease;
+    }
+    
+    .control-button:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+    }
+    
+    .control-button.danger {
+        background: #e74c3c;
+    }
+    
+    .control-button.danger:hover {
+        background: #c0392b;
+    }
+    
+    .control-button.success {
+        background: #27ae60;
+    }
+    
+    .control-button.success:hover {
+        background: #229954;
+    }
+    
+    /* Navigation Buttons */
+    .navigation-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
+    }
+    
+    .nav-button {
+        background: #95a5a6;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-button:hover {
+        transform: translateY(-2px);
+    }
+    
+    .nav-button.primary {
+        background: #3498db;
+    }
+    
+    .nav-button.primary:hover {
+        background: #2980b9;
+    }
+    
+    .nav-button.success {
+        background: #27ae60;
+    }
+    
+    .nav-button.success:hover {
+        background: #229954;
+    }
+    
+    .nav-button:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Drop zones */
+    .drop-active {
+        border-color: #f39c12 !important;
+        background-color: #fef9e7 !important;
+    }
+    
+    .drop-hover {
+        border-color: #e67e22 !important;
+        background-color: #fdeaa7 !important;
+    }
+    
+    /* Form styling */
+    .form-group {
+        margin: 20px 0;
+        text-align: left;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.2s ease;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="creator-container">
+    <!-- Header -->
+    <div class="creator-header">
+        <h1 class="creator-title">🎮 Visual Puzzle Creator</h1>
+        <p class="creator-subtitle">Create amazing shape puzzles with drag & drop interface</p>
+    </div>
+    
+    <!-- Step Navigation -->
+    <div class="step-navigation">
+        <div class="step-item active" data-step="1">
+            <span class="step-number">1</span>
+            Grid Template
+        </div>
+        <div class="step-item" data-step="2">
+            <span class="step-number">2</span>
+            Design Puzzle
+        </div>
+        <div class="step-item" data-step="3">
+            <span class="step-number">3</span>
+            Set Answers
+        </div>
+        <div class="step-item" data-step="4">
+            <span class="step-number">4</span>
+            Save Puzzle
+        </div>
+    </div>
+    
+    <!-- Step 1: Grid Template Selection -->
+    <div class="content-panel active" id="step1">
+        <div class="grid-selection">
+            <h2>Choose Your Grid Template</h2>
+            <p>Select the grid size for your puzzle</p>
+            
+            <div class="grid-options">
+                <div class="grid-option" data-size="3">
+                    <div class="grid-preview grid-3x3">
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                    </div>
+                    <div class="grid-label">3x3 Grid</div>
+                    <div class="grid-description">9 cells, perfect for beginners</div>
+                </div>
+                
+                <div class="grid-option" data-size="4">
+                    <div class="grid-preview grid-4x4">
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                    </div>
+                    <div class="grid-label">4x4 Grid</div>
+                    <div class="grid-description">16 cells, intermediate level</div>
+                </div>
+                
+                <div class="grid-option" data-size="5">
+                    <div class="grid-preview grid-5x5">
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                        <div class="grid-cell-preview"></div>
+                    </div>
+                    <div class="grid-label">5x5 Grid</div>
+                    <div class="grid-description">25 cells, advanced challenge</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 2: Puzzle Design -->
+    <div class="content-panel" id="step2">
+        <h2>Design Your Puzzle</h2>
+        <p>Drag shapes from the palette to the grid. Right-click on cells to add question marks.</p>
+        
+        <div class="puzzle-workspace">
+            <div class="grid-area">
+                <h3>Puzzle Grid</h3>
+                <div class="puzzle-grid" id="puzzleGrid">
+                    <!-- Grid cells will be generated by JavaScript -->
+                </div>
+                
+                <div class="grid-controls">
+                    <button class="control-button" onclick="clearGrid()">Clear Grid</button>
+                    <button class="control-button success" onclick="toggleQuestionMode()">Question Mode</button>
+                    <button class="control-button danger" onclick="removeQuestionMarks()">Remove Question Marks</button>
+                </div>
+            </div>
+            
+            <div class="shapes-area">
+                <div class="shapes-palette">
+                    <h3 class="palette-title">Available Shapes</h3>
+                    <div class="shapes-grid" id="shapesGrid">
+                        <!-- Shapes will be loaded by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 3: Answer Definition -->
+    <div class="content-panel" id="step3">
+        <div style="text-align: center;">
+            <h2>Define Correct Answers</h2>
+            <p>Click on question mark positions and select the correct shapes</p>
+            
+            <div id="answerSection">
+                <!-- Answer setup will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 4: Save Puzzle -->
+    <div class="content-panel" id="step4">
+        <div style="text-align: center;">
+            <h2>Save Your Puzzle</h2>
+            
+            <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: left;">
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+                    <span>Grid Size:</span>
+                    <span id="summaryGridSize">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dee2e6;">
+                    <span>Question Marks:</span>
+                    <span id="summaryQuestionMarks">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+                    <span>Shapes Used:</span>
+                    <span id="summaryShapes">-</span>
+                </div>
+            </div>
+            
+            <form id="puzzleForm">
+                <div class="form-group">
+                    <label for="puzzleName">Puzzle Name</label>
+                    <input type="text" id="puzzleName" name="name" required placeholder="Enter puzzle name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="puzzleDescription">Description</label>
+                    <textarea id="puzzleDescription" name="description" rows="3" placeholder="Describe your puzzle"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="puzzleLevel">Assign to Level</label>
+                    <select id="puzzleLevel" name="level">
+                        <option value="">Create New Level</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <div class="navigation-buttons">
+        <button class="nav-button" id="prevBtn" onclick="previousStep()" style="display: none;">Previous</button>
+        <button class="nav-button primary" id="nextBtn" onclick="nextStep()">Next Step</button>
+        <button class="nav-button success" id="saveBtn" onclick="savePuzzle()" style="display: none;">Save Puzzle</button>
+    </div>
+    
+    <!-- Feedback -->
+    <div id="feedback" style="display: none; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: 500;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let currentStep = 1;
+let selectedGridSize = null;
+let gridData = {};
+let availableShapes = [];
+let questionMode = false;
+let answerData = {};
+
+// Initialize the creator
+document.addEventListener('DOMContentLoaded', function() {
+    loadShapes();
+    setupEventListeners();
+});
+
+// Setup event listeners
+function setupEventListeners() {
+    // Grid option selection
+    document.querySelectorAll('.grid-option').forEach(option => {
+        option.addEventListener('click', function() {
+            selectGridSize(this.dataset.size);
+        });
+    });
+    
+    // Step navigation
+    document.querySelectorAll('.step-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const step = parseInt(this.dataset.step);
+            if (step <= currentStep || this.classList.contains('completed')) {
+                goToStep(step);
+            }
+        });
+    });
+}
+
+// Load available shapes
+async function loadShapes() {
+    try {
+        const response = await fetch('/api/shapes/');
+        const data = await response.json();
+        availableShapes = data;
+        renderShapes();
+    } catch (error) {
+        console.error('Error loading shapes:', error);
+        showFeedback('Error loading shapes. Please refresh the page.', 'error');
+    }
+}
+
+// Render shapes in the palette
+function renderShapes() {
+    const shapesGrid = document.getElementById('shapesGrid');
+    if (!shapesGrid) return;
+    
+    shapesGrid.innerHTML = '';
+    
+    if (!selectedGridSize) {
+        // Show message when no grid is selected
+        shapesGrid.innerHTML = `
+            <div class="shapes-message">
+                <i class="fas fa-info-circle"></i>
+                <p>Select a grid size above to see available shapes</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Determine how many shapes to show based on grid size
+    let maxShapes = selectedGridSize; // Grid size determines number of shapes: 3x3=3 shapes, 4x4=4 shapes, 5x5=5 shapes
+    
+    // Show only the required number of shapes
+    const shapesToShow = availableShapes.slice(0, maxShapes);
+    
+    shapesToShow.forEach(shape => {
+        const shapeElement = document.createElement('div');
+        shapeElement.className = 'shape-item';
+        shapeElement.draggable = true;
+        shapeElement.dataset.shapeId = shape.id;
+        shapeElement.dataset.shapeName = shape.name;
+        shapeElement.title = shape.name;
+        
+        shapeElement.innerHTML = `
+            <svg viewBox="0 0 40 40" style="color: ${shape.color};">
+                ${shape.svg_data}
+            </svg>
+        `;
+        
+        // Add drag event listeners
+        shapeElement.addEventListener('dragstart', handleDragStart);
+        
+        shapesGrid.appendChild(shapeElement);
+    });
+    
+    // Add question mark item (always 1 question mark regardless of grid size)
+    const questionMarkElement = document.createElement('div');
+    questionMarkElement.className = 'shape-item question-mark-item';
+    questionMarkElement.draggable = true;
+    questionMarkElement.dataset.shapeId = 'question';
+    questionMarkElement.dataset.shapeName = 'Question Mark';
+    questionMarkElement.title = 'Question Mark';
+    
+    questionMarkElement.innerHTML = `
+        <div class="question-mark-shape">?</div>
+    `;
+    
+    // Add drag event listeners
+    questionMarkElement.addEventListener('dragstart', handleDragStart);
+    
+    shapesGrid.appendChild(questionMarkElement);
+    
+    // Show shape count info
+    const shapeCountInfo = document.createElement('div');
+    shapeCountInfo.className = 'shape-count-info';
+    shapeCountInfo.innerHTML = `
+        <i class="fas fa-lightbulb"></i>
+        <small>Using ${maxShapes} shapes + 1 question mark for ${selectedGridSize}×${selectedGridSize} grid</small>
+    `;
+    shapesGrid.appendChild(shapeCountInfo);
+}
+
+// Grid size selection
+function selectGridSize(size) {
+    selectedGridSize = parseInt(size);
+    
+    // Update UI
+    document.querySelectorAll('.grid-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    document.querySelector(`[data-size="${size}"]`).classList.add('selected');
+    
+    // Re-render shapes with correct count for this grid size
+    renderShapes();
+    
+    // Enable next button
+    updateNavigationButtons();
+}
+
+// Generate puzzle grid
+function generatePuzzleGrid() {
+    if (!selectedGridSize) return;
+    
+    const puzzleGrid = document.getElementById('puzzleGrid');
+    puzzleGrid.innerHTML = '';
+    
+    // Set grid template
+    puzzleGrid.style.gridTemplateColumns = `repeat(${selectedGridSize}, 80px)`;
+    puzzleGrid.style.gridTemplateRows = `repeat(${selectedGridSize}, 80px)`;
+    
+    // Create grid cells
+    for (let row = 0; row < selectedGridSize; row++) {
+        for (let col = 0; col < selectedGridSize; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            // Add event listeners
+            cell.addEventListener('dragover', handleDragOver);
+            cell.addEventListener('drop', handleDrop);
+            cell.addEventListener('click', handleCellClick);
+            cell.addEventListener('contextmenu', handleCellRightClick);
+            
+            puzzleGrid.appendChild(cell);
+            
+            // Initialize grid data
+            if (!gridData[row]) gridData[row] = {};
+            gridData[row][col] = null;
+        }
+    }
+}
+
+// Drag and drop handlers
+function handleDragStart(e) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+        shapeId: e.target.dataset.shapeId,
+        shapeName: e.target.dataset.shapeName
+    }));
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drop-hover');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drop-hover');
+    
+    const shapeData = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const row = parseInt(e.currentTarget.dataset.row);
+    const col = parseInt(e.currentTarget.dataset.col);
+    
+    placeShape(row, col, shapeData.shapeId, shapeData.shapeName);
+}
+
+// Place shape in cell
+function placeShape(row, col, shapeId, shapeName) {
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    
+    // Clear cell first
+    cell.innerHTML = '';
+    cell.classList.remove('question-mark', 'has-shape');
+    
+    if (shapeId === 'question') {
+        // Handle question mark
+        cell.innerHTML = `
+            <div class="question-mark-in-cell">?</div>
+            <div class="cell-controls">
+                <button class="control-btn" onclick="clearCell(${row}, ${col})" title="Remove">×</button>
+            </div>
+        `;
+        cell.classList.add('question-mark');
+        
+        // Update grid data
+        gridData[row][col] = {
+            type: 'question',
+            display: '?'
+        };
+    } else {
+        // Handle regular shape
+        const shape = availableShapes.find(s => s.id == shapeId);
+        if (!shape) return;
+        
+        cell.innerHTML = `
+            <div class="shape-in-cell">
+                <svg viewBox="0 0 40 40" style="color: ${shape.color};">
+                    ${shape.svg_data}
+                </svg>
+            </div>
+            <div class="cell-controls">
+                <button class="control-btn" onclick="clearCell(${row}, ${col})" title="Remove">×</button>
+            </div>
+        `;
+        
+        cell.classList.add('has-shape');
+        
+        // Update grid data
+        gridData[row][col] = {
+            type: 'shape',
+            shapeId: shapeId,
+            shapeName: shapeName
+        };
+    }
+    
+    // Update navigation buttons after placing shape
+    updateNavigationButtons();
+}
+
+// Handle cell click
+function handleCellClick(e) {
+    if (questionMode) {
+        const row = parseInt(e.currentTarget.dataset.row);
+        const col = parseInt(e.currentTarget.dataset.col);
+        toggleQuestionMark(row, col);
+    }
+}
+
+// Handle right-click for question marks
+function handleCellRightClick(e) {
+    e.preventDefault();
+    const row = parseInt(e.currentTarget.dataset.row);
+    const col = parseInt(e.currentTarget.dataset.col);
+    toggleQuestionMark(row, col);
+}
+
+// Toggle question mark
+function toggleQuestionMark(row, col) {
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    
+    if (cell.classList.contains('question-mark')) {
+        // Remove question mark
+        cell.classList.remove('question-mark');
+        cell.innerHTML = '';
+        gridData[row][col] = null;
+    } else {
+        // Add question mark
+        cell.innerHTML = '';
+        cell.classList.remove('has-shape');
+        cell.classList.add('question-mark');
+        gridData[row][col] = {
+            type: 'question',
+            answer: null
+        };
+    }
+}
+
+// Clear cell
+function clearCell(row, col) {
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    cell.innerHTML = '';
+    cell.classList.remove('has-shape', 'question-mark');
+    gridData[row][col] = null;
+}
+
+// Clear entire grid
+function clearGrid() {
+    const cells = document.querySelectorAll('.grid-cell');
+    cells.forEach(cell => {
+        cell.innerHTML = '';
+        cell.classList.remove('has-shape', 'question-mark');
+    });
+    
+    // Reset grid data
+    gridData = {};
+    for (let row = 0; row < selectedGridSize; row++) {
+        gridData[row] = {};
+        for (let col = 0; col < selectedGridSize; col++) {
+            gridData[row][col] = null;
+        }
+    }
+}
+
+// Toggle question mode
+function toggleQuestionMode() {
+    questionMode = !questionMode;
+    const button = event.target;
+    if (questionMode) {
+        button.textContent = 'Exit Question Mode';
+        button.style.backgroundColor = '#e74c3c';
+        showFeedback('Question mode enabled. Click cells to add/remove question marks.', 'info');
+    } else {
+        button.textContent = 'Question Mode';
+        button.style.backgroundColor = '#27ae60';
+        document.getElementById('feedback').style.display = 'none';
+    }
+}
+
+// Remove all question marks
+function removeQuestionMarks() {
+    const questionCells = document.querySelectorAll('.question-mark');
+    questionCells.forEach(cell => {
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        clearCell(row, col);
+    });
+}
+
+// Navigation functions
+function nextStep() {
+    if (validateCurrentStep()) {
+        currentStep++;
+        if (currentStep === 2) generatePuzzleGrid();
+        if (currentStep === 3) generateAnswerSection();
+        if (currentStep === 4) generateSummary();
+        goToStep(currentStep);
+    }
+}
+
+function previousStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        goToStep(currentStep);
+    }
+}
+
+function goToStep(step) {
+    // Hide all panels
+    document.querySelectorAll('.content-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    
+    // Show target panel
+    document.getElementById(`step${step}`).classList.add('active');
+    
+    // Update step navigation
+    document.querySelectorAll('.step-item').forEach((item, index) => {
+        item.classList.remove('active', 'completed');
+        if (index + 1 < step) {
+            item.classList.add('completed');
+        } else if (index + 1 === step) {
+            item.classList.add('active');
+        }
+    });
+    
+    currentStep = step;
+    updateNavigationButtons();
+}
+
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    
+    prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+    nextBtn.style.display = currentStep < 4 ? 'block' : 'none';
+    saveBtn.style.display = currentStep === 4 ? 'block' : 'none';
+    
+    // Enable/disable next button based on validation
+    nextBtn.disabled = !validateCurrentStep();
+}
+
+function validateCurrentStep() {
+    switch (currentStep) {
+        case 1:
+            return selectedGridSize !== null;
+        case 2:
+            return hasAnyShapes(); // Allow progression if any shapes are placed
+        case 3:
+            return validateAnswers();
+        case 4:
+            return document.getElementById('puzzleName').value.trim() !== '';
+        default:
+            return true;
+    }
+}
+
+function hasAnyShapes() {
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col]) {
+                return true; // Any shape or question mark placed
+            }
+        }
+    }
+    return false;
+}
+
+function hasQuestionMarks() {
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col] && gridData[row][col].type === 'question') {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function validateAnswers() {
+    let hasQuestions = false;
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col] && gridData[row][col].type === 'question') {
+                hasQuestions = true;
+                if (!gridData[row][col].answer) return false;
+            }
+        }
+    }
+    // If no question marks, validation passes
+    return true;
+}
+
+function generateAnswerSection() {
+    const answerSection = document.getElementById('answerSection');
+    answerSection.innerHTML = '';
+    
+    const questionCells = [];
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col] && gridData[row][col].type === 'question') {
+                questionCells.push({row: parseInt(row), col: parseInt(col)});
+            }
+        }
+    }
+    
+    if (questionCells.length === 0) {
+        answerSection.innerHTML = '<p>No question marks found. Please go back and add question marks to your puzzle.</p>';
+        return;
+    }
+    
+    questionCells.forEach((cell, index) => {
+        const answerDiv = document.createElement('div');
+        answerDiv.style.margin = '20px 0';
+        answerDiv.style.padding = '20px';
+        answerDiv.style.border = '2px solid #ecf0f1';
+        answerDiv.style.borderRadius = '10px';
+        
+        answerDiv.innerHTML = `
+            <h4>Question ${index + 1} - Position (${cell.row + 1}, ${cell.col + 1})</h4>
+            <p>Select the correct shape for this position:</p>
+            <div class="shapes-grid" style="max-width: 400px; margin: 10px auto;">
+                ${availableShapes.map(shape => `
+                    <div class="shape-item" onclick="selectAnswer(${cell.row}, ${cell.col}, ${shape.id})" 
+                         data-answer-row="${cell.row}" data-answer-col="${cell.col}" data-shape-id="${shape.id}">
+                        <svg viewBox="0 0 40 40" style="color: ${shape.color};">
+                            ${shape.svg_data}
+                        </svg>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        answerSection.appendChild(answerDiv);
+    });
+}
+
+function selectAnswer(row, col, shapeId) {
+    // Update grid data
+    if (gridData[row] && gridData[row][col]) {
+        gridData[row][col].answer = shapeId;
+    }
+    
+    // Update UI
+    document.querySelectorAll(`[data-answer-row="${row}"][data-answer-col="${col}"]`).forEach(item => {
+        item.style.backgroundColor = '#ecf0f1';
+        item.style.borderColor = '#ecf0f1';
+    });
+    
+    const selectedItem = document.querySelector(`[data-answer-row="${row}"][data-answer-col="${col}"][data-shape-id="${shapeId}"]`);
+    selectedItem.style.backgroundColor = '#d4edda';
+    selectedItem.style.borderColor = '#28a745';
+    
+    updateNavigationButtons();
+}
+
+function generateSummary() {
+    let questionCount = 0;
+    let shapesUsed = new Set();
+    
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col]) {
+                if (gridData[row][col].type === 'question') {
+                    questionCount++;
+                    if (gridData[row][col].answer) {
+                        shapesUsed.add(gridData[row][col].answer);
+                    }
+                } else if (gridData[row][col].type === 'shape') {
+                    shapesUsed.add(gridData[row][col].shapeId);
+                }
+            }
+        }
+    }
+    
+    document.getElementById('summaryGridSize').textContent = `${selectedGridSize}x${selectedGridSize}`;
+    document.getElementById('summaryQuestionMarks').textContent = questionCount;
+    document.getElementById('summaryShapes').textContent = shapesUsed.size;
+}
+
+async function savePuzzle() {
+    const formData = new FormData(document.getElementById('puzzleForm'));
+    
+    // Collect solution data (answers for question marks)
+    const solutionData = {};
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col] && gridData[row][col].type === 'question' && gridData[row][col].answer) {
+                if (!solutionData[row]) solutionData[row] = {};
+                solutionData[row][col] = {
+                    type: 'shape',
+                    shapeId: gridData[row][col].answer,
+                    shapeName: availableShapes.find(s => s.id === gridData[row][col].answer)?.name || 'Unknown'
+                };
+            }
+        }
+    }
+    
+    // Collect all shapes used in the puzzle
+    const shapesUsed = new Set();
+    for (let row in gridData) {
+        for (let col in gridData[row]) {
+            if (gridData[row][col]) {
+                if (gridData[row][col].type === 'shape') {
+                    shapesUsed.add(gridData[row][col].shapeId);
+                } else if (gridData[row][col].type === 'question' && gridData[row][col].answer) {
+                    shapesUsed.add(gridData[row][col].answer);
+                }
+            }
+        }
+    }
+    
+    const puzzleData = {
+        puzzle_name: formData.get('name'),
+        puzzle_description: formData.get('description'),
+        puzzle_difficulty: 'easy', // Default for now
+        grid_size: selectedGridSize,
+        grid_data: JSON.stringify(gridData),
+        solution_data: JSON.stringify(solutionData),
+        shapes_used: JSON.stringify(Array.from(shapesUsed))
+    };
+    
+    try {
+        showFeedback('Saving puzzle...', 'info');
+        
+        const response = await fetch('/create-shape-puzzle/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(puzzleData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showFeedback('Puzzle saved successfully! 🎉', 'success');
+            setTimeout(() => {
+                // Redirect to shape games list where users can see and play puzzles
+                window.location.href = '/shape-games/';
+            }, 2000);
+        } else {
+            showFeedback(result.message || result.error || 'Error saving puzzle', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving puzzle:', error);
+        showFeedback('Error saving puzzle. Please try again.', 'error');
+    }
+}
+
+function showFeedback(message, type) {
+    const feedback = document.getElementById('feedback');
+    feedback.textContent = message;
+    feedback.className = `feedback ${type}`;
+    feedback.style.display = 'block';
+    
+    if (type === 'info') {
+        feedback.style.backgroundColor = '#d1ecf1';
+        feedback.style.color = '#0c5460';
+        feedback.style.borderColor = '#bee5eb';
+    } else if (type === 'success') {
+        feedback.style.backgroundColor = '#d4edda';
+        feedback.style.color = '#155724';
+        feedback.style.borderColor = '#c3e6cb';
+    } else if (type === 'error') {
+        feedback.style.backgroundColor = '#f8d7da';
+        feedback.style.color = '#721c24';
+        feedback.style.borderColor = '#f5c6cb';
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Auto-update navigation buttons when inputs change
+document.addEventListener('input', function(e) {
+    if (e.target.matches('#puzzleName')) {
+        updateNavigationButtons();
+    }
+});
+</script>
+{% endblock %}

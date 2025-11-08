@@ -1,0 +1,599 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+    background: linear-gradient(to bottom, #FFE4B5 0%, #FFF8DC 30%, #FFB6C1 70%, #DDA0DD 100%);
+    min-height: 100vh;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Add candy-themed background decorations */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 15% 20%, rgba(255,182,193,0.4) 0%, transparent 15%),
+        radial-gradient(circle at 85% 15%, rgba(255,255,0,0.3) 0%, transparent 12%),
+        radial-gradient(circle at 25% 80%, rgba(255,165,0,0.3) 0%, transparent 15%),
+        radial-gradient(circle at 75% 85%, rgba(144,238,144,0.3) 0%, transparent 12%),
+        radial-gradient(circle at 45% 30%, rgba(255,192,203,0.3) 0%, transparent 10%),
+        radial-gradient(circle at 90% 70%, rgba(255,218,185,0.3) 0%, transparent 12%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.level-map-container {
+    position: relative;
+    padding: 2rem 0;
+    min-height: calc(100vh - 100px);
+    z-index: 1;
+}
+
+.level-path {
+    position: absolute;
+    z-index: 1;
+}
+
+.path-segment {
+    height: 12px;
+    background: repeating-linear-gradient(
+        45deg,
+        #FF6B9D 0px,
+        #FF6B9D 15px,
+        #FFFFFF 15px,
+        #FFFFFF 30px,
+        #FFE066 30px,
+        #FFE066 45px,
+        #FFFFFF 45px,
+        #FFFFFF 60px
+    );
+    border-radius: 6px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.3);
+    border: 2px solid rgba(255,255,255,0.8);
+}
+
+.path-segment::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(45deg, rgba(255,107,157,0.3), rgba(255,224,102,0.3));
+    border-radius: 8px;
+    z-index: -1;
+    opacity: 0.6;
+}
+
+.level-node {
+    position: absolute;
+    z-index: 2;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.level-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3), inset 0 2px 8px rgba(255,255,255,0.3);
+    border: 5px solid rgba(255,255,255,0.9);
+    position: relative;
+    background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%);
+    overflow: hidden;
+}
+
+/* Add sparkle effect */
+.level-circle::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 20%;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: rotate(45deg);
+}
+
+.level-circle.completed {
+    background: linear-gradient(135deg, #56C596 0%, #38A169 100%);
+    animation: pulse-green 2s infinite;
+}
+
+.level-circle.completed::after {
+    content: '★';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: white;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border: 2px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.level-circle.current {
+    background: linear-gradient(135deg, #FFE066 0%, #FF8A65 100%);
+    animation: glow-current 2s infinite;
+    border-color: #FF6B6B;
+}
+
+.level-circle.locked {
+    background: linear-gradient(135deg, #A8A8A8 0%, #6D6D6D 100%);
+    opacity: 0.6;
+    cursor: not-allowed;
+    border-color: #999;
+}
+
+.level-circle:hover:not(.locked) {
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+}
+
+.level-info {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 10px;
+    text-align: center;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.level-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.level-progress {
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+.stars {
+    margin-top: 5px;
+}
+
+.star {
+    color: #feca57;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    margin: 0 1px;
+}
+
+.star.empty {
+    color: rgba(255,255,255,0.3);
+}
+
+@keyframes pulse-green {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes glow-current {
+    0%, 100% { 
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 0 0 rgba(255, 107, 107, 0.4); 
+    }
+    50% { 
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 0 20px rgba(255, 107, 107, 0); 
+    }
+}
+
+.decorative-elements {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.8);
+    border-radius: 50px;
+    opacity: 0.6;
+    animation: float 6s ease-in-out infinite;
+}
+
+.cloud:nth-child(1) {
+    width: 100px;
+    height: 60px;
+    top: 10%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.cloud:nth-child(2) {
+    width: 80px;
+    height: 48px;
+    top: 20%;
+    right: 15%;
+    animation-delay: 2s;
+}
+
+.cloud:nth-child(3) {
+    width: 120px;
+    height: 72px;
+    bottom: 15%;
+    left: 20%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+.header-section {
+    text-align: center;
+    padding: 2rem 0;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.header-title {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.header-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+}
+
+.progress-summary {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin: 0 auto 2rem;
+    max-width: 600px;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.stat-item {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.level-grid {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 800px;
+}
+
+/* Level positioning - creating a winding path like Candy Crush */
+.level-1 { top: 700px; left: 100px; }
+.level-2 { top: 600px; left: 200px; }
+.level-3 { top: 500px; left: 150px; }
+.level-4 { top: 400px; left: 250px; }
+.level-5 { top: 300px; left: 200px; }
+.level-6 { top: 200px; left: 300px; }
+.level-7 { top: 150px; left: 400px; }
+.level-8 { top: 250px; left: 500px; }
+.level-9 { top: 350px; left: 450px; }
+.level-10 { top: 450px; left: 550px; }
+.level-11 { top: 550px; left: 500px; }
+.level-12 { top: 650px; left: 600px; }
+.level-13 { top: 600px; left: 700px; }
+.level-14 { top: 500px; left: 750px; }
+.level-15 { top: 400px; left: 700px; }
+.level-16 { top: 300px; left: 800px; }
+.level-17 { top: 200px; left: 750px; }
+.level-18 { top: 100px; left: 650px; }
+.level-19 { top: 50px; left: 550px; }
+.level-20 { top: 100px; left: 450px; }
+
+/* Path connections */
+.path-1-2 { top: 650px; left: 150px; width: 70px; transform: rotate(45deg); }
+.path-2-3 { top: 550px; left: 175px; width: 50px; transform: rotate(-45deg); }
+.path-3-4 { top: 450px; left: 200px; width: 70px; transform: rotate(45deg); }
+.path-4-5 { top: 350px; left: 225px; width: 50px; transform: rotate(-45deg); }
+.path-5-6 { top: 250px; left: 250px; width: 70px; transform: rotate(45deg); }
+.path-6-7 { top: 175px; left: 350px; width: 70px; transform: rotate(0deg); }
+.path-7-8 { top: 200px; left: 450px; width: 70px; transform: rotate(45deg); }
+.path-8-9 { top: 300px; left: 475px; width: 50px; transform: rotate(90deg); }
+.path-9-10 { top: 400px; left: 500px; width: 70px; transform: rotate(45deg); }
+.path-10-11 { top: 500px; left: 525px; width: 50px; transform: rotate(135deg); }
+.path-11-12 { top: 600px; left: 550px; width: 70px; transform: rotate(45deg); }
+.path-12-13 { top: 625px; left: 650px; width: 70px; transform: rotate(0deg); }
+.path-13-14 { top: 550px; left: 725px; width: 50px; transform: rotate(-45deg); }
+.path-14-15 { top: 450px; left: 725px; width: 50px; transform: rotate(-90deg); }
+.path-15-16 { top: 350px; left: 750px; width: 70px; transform: rotate(45deg); }
+.path-16-17 { top: 250px; left: 775px; width: 50px; transform: rotate(-45deg); }
+.path-17-18 { top: 150px; left: 700px; width: 70px; transform: rotate(-45deg); }
+.path-18-19 { top: 75px; left: 600px; width: 70px; transform: rotate(-45deg); }
+.path-19-20 { top: 75px; left: 500px; width: 70px; transform: rotate(180deg); }
+
+.modal-content {
+    border-radius: 20px;
+    border: none;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px 20px 0 0;
+}
+
+.btn-play {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+}
+
+.btn-play:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="level-map-container">
+    <!-- Decorative clouds -->
+    <div class="decorative-elements">
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="header-section">
+        <h1 class="header-title">
+            <i class="fas fa-map-marked-alt"></i> Shape Puzzle Adventure
+        </h1>
+        <p class="header-subtitle">🚀 Choose your level and start your puzzle journey!</p>
+        
+        <!-- Progress Summary -->
+        <div class="progress-summary">
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <span class="stat-number">{{ completed_levels }}</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_levels }}</span>
+                    <span class="stat-label">Total Levels</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ current_level }}</span>
+                    <span class="stat-label">Current Level</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_stars }}</span>
+                    <span class="stat-label">Stars Earned</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Grid -->
+    <div class="container">
+        <div class="level-grid">
+            {% for level_info in level_data %}
+                {% with level=level_info.level progress=level_info.progress %}
+                    <!-- Path to next level -->
+                    {% if not forloop.last %}
+                        <div class="level-path path-segment path-{{ level.level_number }}-{{ level.level_number|add:1 }}"></div>
+                    {% endif %}
+                    
+                    <!-- Level Node -->
+                    <div class="level-node level-{{ level.level_number }}" 
+                         data-level-id="{{ level.id }}"
+                         data-level-number="{{ level.level_number }}"
+                         data-is-unlocked="{{ level_info.is_unlocked|yesno:'true,false' }}">
+                        
+                        <div class="level-circle 
+                                    {% if progress and progress.is_completed %}completed
+                                    {% elif level_info.is_unlocked and not progress.is_completed %}current
+                                    {% elif not level_info.is_unlocked %}locked
+                                    {% endif %}"
+                             onclick="{% if level_info.is_unlocked %}openLevelModal({{ level.id }}, '{{ level.title|escapejs }}', {{ level.level_number }}, {{ level_info.completion_percentage }}){% endif %}">
+                            {{ level.level_number }}
+                        </div>
+                        
+                        <div class="level-info">
+                            <div class="level-title">{{ level.title|truncatewords:2 }}</div>
+                            <div class="level-progress">
+                                {% if progress %}
+                                    {{ level_info.completion_percentage }}% Complete
+                                {% elif level_info.is_unlocked %}
+                                    Not Started
+                                {% else %}
+                                    Locked
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Stars -->
+                            <div class="stars">
+                                {% if progress %}
+                                    {% for i in "123" %}
+                                        <i class="fas fa-star star {% if forloop.counter <= progress.stars_earned %}{% else %}empty{% endif %}"></i>
+                                    {% endfor %}
+                                {% else %}
+                                    <i class="fas fa-star star empty"></i>
+                                    <i class="fas fa-star star empty"></i>
+                                    <i class="fas fa-star star empty"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endwith %}
+            {% empty %}
+                <div class="text-center text-white">
+                    <h3>No levels available yet!</h3>
+                    <p>Check back soon for exciting puzzle challenges.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Level Modal -->
+<div class="modal fade" id="levelModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <i class="fas fa-puzzle-piece"></i> <span id="modalLevelTitle">Level Details</span>
+                </h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Level Information</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Level:</strong> <span id="modalLevelNumber"></span></li>
+                            <li><strong>Progress:</strong> <span id="modalProgress"></span>%</li>
+                            <li><strong>Puzzles:</strong> <span id="modalPuzzleCount"></span></li>
+                            <li><strong>Difficulty:</strong> <span id="modalDifficulty"></span></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Rewards</h5>
+                        <div class="alert alert-info">
+                            <i class="fas fa-trophy"></i> Complete this level to unlock the next adventure!
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-star"></i> Earn up to 3 stars based on your performance!
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="playLevelBtn" class="btn btn-play">
+                    <i class="fas fa-play"></i> Start Level
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openLevelModal(levelId, levelTitle, levelNumber, progress) {
+    document.getElementById('modalLevelTitle').textContent = levelTitle;
+    document.getElementById('modalLevelNumber').textContent = levelNumber;
+    document.getElementById('modalProgress').textContent = progress;
+    document.getElementById('modalPuzzleCount').textContent = 'Multiple';
+    document.getElementById('modalDifficulty').textContent = 'Progressive';
+    
+    document.getElementById('playLevelBtn').href = `/levels/${levelId}/`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('levelModal'));
+    modal.show();
+}
+
+// Add some interactive animations
+document.addEventListener('DOMContentLoaded', function() {
+    const levelNodes = document.querySelectorAll('.level-node');
+    
+    levelNodes.forEach((node, index) => {
+        // Stagger the appearance of nodes
+        setTimeout(() => {
+            node.style.opacity = '0';
+            node.style.transform = 'scale(0)';
+            node.style.transition = 'all 0.5s ease';
+            
+            setTimeout(() => {
+                node.style.opacity = '1';
+                node.style.transform = 'scale(1)';
+            }, 100);
+        }, index * 100);
+    });
+    
+    // Add particle effects for completed levels
+    const completedLevels = document.querySelectorAll('.level-circle.completed');
+    completedLevels.forEach(level => {
+        setInterval(() => {
+            createSparkle(level);
+        }, 2000);
+    });
+});
+
+function createSparkle(element) {
+    const sparkle = document.createElement('div');
+    sparkle.innerHTML = '✨';
+    sparkle.style.position = 'absolute';
+    sparkle.style.pointerEvents = 'none';
+    sparkle.style.fontSize = '20px';
+    sparkle.style.animation = 'sparkle 1s ease-out forwards';
+    
+    const rect = element.getBoundingClientRect();
+    sparkle.style.left = (rect.left + Math.random() * rect.width) + 'px';
+    sparkle.style.top = (rect.top + Math.random() * rect.height) + 'px';
+    
+    document.body.appendChild(sparkle);
+    
+    setTimeout(() => {
+        document.body.removeChild(sparkle);
+    }, 1000);
+}
+
+// Add sparkle animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes sparkle {
+        0% { opacity: 0; transform: scale(0) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1) rotate(180deg); }
+        100% { opacity: 0; transform: scale(0) rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

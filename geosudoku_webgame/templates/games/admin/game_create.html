@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - GeoSudoku Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .shape-selection {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .shape-option {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .shape-option:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+    
+    .shape-option input[type="checkbox"]:checked + .shape-content {
+        background-color: #e3f2fd;
+        border-color: #007bff;
+    }
+    
+    .shape-preview {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 0.5rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+    
+    .json-editor {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .help-text {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+    }
+    
+    .scoring-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="mb-3">
+        <i class="fas fa-gamepad me-3"></i>{{ page_title }}
+    </h1>
+    <p class="lead mb-0">Create engaging shape-based puzzle games for your players</p>
+</div>
+
+<form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+    
+    <!-- Basic Information -->
+    <div class="form-section">
+        <h5><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">Game Name <span class="text-danger">*</span></label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                    {{ form.description }}
+                    <div class="form-text">Provide a brief description of the game rules or theme.</div>
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="{{ form.max_time_minutes.id_for_label }}" class="form-label">Time Limit (minutes)</label>
+                    {{ form.max_time_minutes }}
+                    {% if form.max_time_minutes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.max_time_minutes.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Grid Template Selection -->
+    <div class="form-section">
+        <h5><i class="fas fa-th me-2"></i>Grid Template</h5>
+        
+        <div class="mb-3">
+            <label for="{{ form.grid_template.id_for_label }}" class="form-label">Select Template <span class="text-danger">*</span></label>
+            {{ form.grid_template }}
+            <div class="form-text">Choose a grid template that defines the puzzle layout.</div>
+            {% if form.grid_template.errors %}
+                <div class="invalid-feedback d-block">{{ form.grid_template.errors.0 }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="help-text">
+            <strong>Need a new template?</strong> 
+            <a href="{% url 'games:manage_templates' %}" class="btn btn-sm btn-outline-primary ms-2">
+                <i class="fas fa-plus"></i> Manage Templates
+            </a>
+        </div>
+    </div>
+    
+    <!-- Shape Selection -->
+    <div class="form-section">
+        <h5><i class="fas fa-shapes me-2"></i>Available Shapes</h5>
+        
+        <p class="text-muted mb-3">Select which shapes players can use to solve this puzzle:</p>
+        
+        <div class="shape-selection">
+            {% for choice in form.available_shapes %}
+                <div class="shape-option">
+                    {{ choice.tag }}
+                    <div class="shape-content">
+                        <div class="shape-preview" style="background-color: {{ choice.choice_label.color|default:'#6c757d' }};">
+                            {% if choice.choice_label.shape_type == 'circle' %}
+                                <i class="fas fa-circle"></i>
+                            {% elif choice.choice_label.shape_type == 'square' %}
+                                <i class="fas fa-square"></i>
+                            {% elif choice.choice_label.shape_type == 'triangle' %}
+                                <i class="fas fa-play"></i>
+                            {% elif choice.choice_label.shape_type == 'diamond' %}
+                                <i class="fas fa-gem"></i>
+                            {% elif choice.choice_label.shape_type == 'star' %}
+                                <i class="fas fa-star"></i>
+                            {% elif choice.choice_label.shape_type == 'hexagon' %}
+                                <i class="fas fa-hexagon"></i>
+                            {% else %}
+                                <i class="fas fa-shape"></i>
+                            {% endif %}
+                        </div>
+                        <strong>{{ choice.choice_label.name }}</strong><br>
+                        <small class="text-muted">{{ choice.choice_label.shape_type|title }}</small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% if form.available_shapes.errors %}
+            <div class="invalid-feedback d-block mt-2">{{ form.available_shapes.errors.0 }}</div>
+        {% endif %}
+        
+        <div class="help-text mt-3">
+            <strong>Need more shapes?</strong> 
+            <a href="{% url 'games:manage_shapes' %}" class="btn btn-sm btn-outline-primary ms-2">
+                <i class="fas fa-plus"></i> Manage Shapes
+            </a>
+        </div>
+    </div>
+    
+    <!-- Solution Mapping -->
+    <div class="form-section">
+        <h5><i class="fas fa-puzzle-piece me-2"></i>Solution Mapping</h5>
+        
+        <div class="help-text">
+            <strong>Solution Format:</strong> Define which shape goes where using JSON format.<br>
+            <strong>Example:</strong> <code>{"0,1": 1, "0,2": 2, "1,0": 3}</code><br>
+            Where <code>"row,col"</code> maps to <code>shape_id</code> for each question mark cell.
+        </div>
+        
+        <div class="mb-3">
+            <label for="{{ form.solution_data.id_for_label }}" class="form-label">Solution Data (JSON) <span class="text-danger">*</span></label>
+            {{ form.solution_data }}
+            <div class="form-text">Map each question cell position to the correct shape ID.</div>
+            {% if form.solution_data.errors %}
+                <div class="invalid-feedback d-block">{{ form.solution_data.errors.0 }}</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Scoring Configuration -->
+    <div class="form-section">
+        <h5><i class="fas fa-trophy me-2"></i>Scoring Configuration</h5>
+        
+        <div class="scoring-grid">
+            <div>
+                <label for="{{ form.points_per_correct.id_for_label }}" class="form-label">Points per Correct</label>
+                {{ form.points_per_correct }}
+                <div class="form-text">Points awarded for each correct placement</div>
+                {% if form.points_per_correct.errors %}
+                    <div class="invalid-feedback d-block">{{ form.points_per_correct.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label for="{{ form.penalty_per_wrong.id_for_label }}" class="form-label">Penalty per Wrong</label>
+                {{ form.penalty_per_wrong }}
+                <div class="form-text">Points deducted for each incorrect placement</div>
+                {% if form.penalty_per_wrong.errors %}
+                    <div class="invalid-feedback d-block">{{ form.penalty_per_wrong.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form Actions -->
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'games:manage_shape_games' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Games
+        </a>
+        
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-save"></i> {% if game %}Update Game{% else %}Create Game{% endif %}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+    
+    // Shape selection styling
+    const shapeOptions = document.querySelectorAll('.shape-option');
+    shapeOptions.forEach(option => {
+        const checkbox = option.querySelector('input[type="checkbox"]');
+        const content = option.querySelector('.shape-content');
+        
+        option.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                checkbox.checked = !checkbox.checked;
+                updateShapeSelection();
+            }
+        });
+        
+        checkbox.addEventListener('change', updateShapeSelection);
+    });
+    
+    function updateShapeSelection() {
+        shapeOptions.forEach(option => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            if (checkbox.checked) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Initialize selection state
+    updateShapeSelection();
+    
+    // JSON validation for solution data
+    const solutionTextarea = document.querySelector('#id_solution_data');
+    if (solutionTextarea) {
+        solutionTextarea.addEventListener('blur', function() {
+            try {
+                if (this.value.trim()) {
+                    JSON.parse(this.value);
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                }
+            } catch (e) {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

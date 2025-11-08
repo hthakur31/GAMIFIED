@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.registration-card {
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    padding: 2rem 1.5rem;
+}
+
+.form-floating .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    transition: border-color 0.3s ease;
+}
+
+.form-floating .form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.15);
+}
+
+.btn-register {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.btn-register:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.role-selector {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.role-option {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.role-option:hover {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.role-option.selected {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.role-icon {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    width: 2.5rem;
+    text-align: center;
+}
+
+.welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <!-- Welcome Section -->
+            <div class="welcome-section text-center">
+                <h2 class="mb-3">
+                    <i class="fas fa-puzzle-piece"></i> Join GeoSudoku
+                </h2>
+                <p class="lead mb-0">Create your account and start your puzzle adventure!</p>
+            </div>
+            
+            <div class="row">
+                <!-- Registration Form -->
+                <div class="col-lg-7">
+                    <div class="card registration-card border-0">
+                        <div class="card-header-custom text-white text-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-user-plus me-2"></i>Create Your Account
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <form method="post" id="registrationForm">
+                                {% csrf_token %}
+                                
+                                <!-- Role Selection -->
+                                <div class="role-selector">
+                                    <h6 class="mb-3 text-muted">
+                                        <i class="fas fa-users me-2"></i>Choose Your Role
+                                    </h6>
+                                    
+                                    <div class="role-option" data-role="user">
+                                        <div class="role-icon text-primary">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                        <div>
+                                            <input type="radio" name="role" value="user" class="form-check-input me-2" checked>
+                                            <strong>Player</strong>
+                                            <div class="small text-muted">Play games, track progress, compete on leaderboards</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="role-option" data-role="admin">
+                                        <div class="role-icon text-warning">
+                                            <i class="fas fa-cog"></i>
+                                        </div>
+                                        <div>
+                                            <input type="radio" name="role" value="admin" class="form-check-input me-2">
+                                            <strong>Game Creator</strong>
+                                            <div class="small text-muted">Create shapes, design templates, manage games</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Personal Information -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="first_name" name="first_name" placeholder="First Name">
+                                            <label for="first_name">
+                                                <i class="fas fa-user me-2"></i>First Name
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Last Name">
+                                            <label for="last_name">
+                                                <i class="fas fa-user me-2"></i>Last Name
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                    <label for="username">
+                                        <i class="fas fa-at me-2"></i>Username
+                                    </label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
+                                    <label for="email">
+                                        <i class="fas fa-envelope me-2"></i>Email Address
+                                    </label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="8">
+                                    <label for="password">
+                                        <i class="fas fa-lock me-2"></i>Password
+                                    </label>
+                                    <div class="form-text">Password must be at least 8 characters long</div>
+                                </div>
+                                
+                                <div class="form-floating mb-4">
+                                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" placeholder="Confirm Password" required>
+                                    <label for="password_confirm">
+                                        <i class="fas fa-lock me-2"></i>Confirm Password
+                                    </label>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-register btn-lg">
+                                        <i class="fas fa-user-plus me-2"></i>Create My Account
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center mt-4">
+                                <p class="text-muted">Already have an account? 
+                                    <a href="{% url 'authentication:login' %}" class="text-decoration-none fw-bold">
+                                        Sign in here
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Features Overview -->
+                <div class="col-lg-5">
+                    <div class="card border-0 h-100">
+                        <div class="card-body p-4">
+                            <h5 class="mb-4">
+                                <i class="fas fa-star text-warning me-2"></i>What You Get
+                            </h5>
+                            
+                            <div class="mb-4">
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="me-3 text-primary">
+                                        <i class="fas fa-puzzle-piece fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Shape-Based Puzzles</h6>
+                                        <small class="text-muted">Drag and drop geometric shapes to solve unique GeoSudoku puzzles</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="me-3 text-success">
+                                        <i class="fas fa-chart-line fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Progress Tracking</h6>
+                                        <small class="text-muted">Monitor your performance, completion rates, and improvement over time</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="me-3 text-warning">
+                                        <i class="fas fa-trophy fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Achievements & Leaderboards</h6>
+                                        <small class="text-muted">Earn achievements and compete with other players</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3 text-info">
+                                        <i class="fas fa-users fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Community Features</h6>
+                                        <small class="text-muted">Join a community of puzzle enthusiasts and shape creators</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted mb-2">
+                                    <i class="fas fa-crown me-2"></i>Admin Benefits
+                                </h6>
+                                <ul class="small text-muted mb-0">
+                                    <li>Upload and manage custom shapes</li>
+                                    <li>Create game templates and grids</li>
+                                    <li>Design challenging puzzles</li>
+                                    <li>Monitor player engagement</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleOptions = document.querySelectorAll('.role-option');
+    const roleInputs = document.querySelectorAll('input[name="role"]');
+    
+    // Handle role selection
+    roleOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const role = this.dataset.role;
+            
+            // Remove selected class from all options
+            roleOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            
+            // Update radio button
+            const radioInput = this.querySelector('input[type="radio"]');
+            radioInput.checked = true;
+        });
+    });
+    
+    // Initialize with default selection
+    document.querySelector('.role-option[data-role="user"]').classList.add('selected');
+    
+    // Password confirmation validation
+    const password = document.getElementById('password');
+    const passwordConfirm = document.getElementById('password_confirm');
+    
+    function validatePassword() {
+        if (password.value !== passwordConfirm.value) {
+            passwordConfirm.setCustomValidity("Passwords don't match");
+        } else {
+            passwordConfirm.setCustomValidity('');
+        }
+    }
+    
+    password.addEventListener('change', validatePassword);
+    passwordConfirm.addEventListener('keyup', validatePassword);
+});
+</script>
+{% endblock %}

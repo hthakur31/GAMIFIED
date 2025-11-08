@@ -1,0 +1,611 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.game-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.game-board {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.game-header {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.shapes-panel {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+.grid-container {
+    display: grid;
+    gap: 3px;
+    background-color: #333;
+    padding: 15px;
+    border-radius: 0.75rem;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: fit-content;
+}
+
+.grid-cell {
+    width: 60px;
+    height: 60px;
+    background-color: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.grid-cell:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.grid-cell.fixed {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+.grid-cell.fixed:hover {
+    transform: none;
+    border-color: #ddd;
+}
+
+.grid-cell.selected {
+    background-color: #007bff;
+    border-color: #0056b3;
+}
+
+.grid-cell.correct {
+    background-color: #d4edda;
+    border-color: #28a745;
+}
+
+.grid-cell.incorrect {
+    background-color: #f8d7da;
+    border-color: #dc3545;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.shape-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shape-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.available-shapes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.shape-option {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.shape-option:hover {
+    border-color: #007bff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.shape-option.selected {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+    transform: scale(1.05);
+}
+
+.shape-option svg {
+    width: 40px;
+    height: 40px;
+}
+
+.level-info {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill {
+    background-color: #28a745;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.game-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.btn-back {
+    background: linear-gradient(45deg, #6c757d, #495057);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    background: linear-gradient(45deg, #495057, #343a40);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.btn-hint {
+    background: linear-gradient(45deg, #ffc107, #e0a800);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-hint:hover {
+    background: linear-gradient(45deg, #e0a800, #d39e00);
+    transform: translateY(-2px);
+}
+
+.btn-reset {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-reset:hover {
+    background: linear-gradient(45deg, #c82333, #bd2130);
+    transform: translateY(-2px);
+}
+
+.completion-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.completion-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    text-align: center;
+    max-width: 400px;
+    margin: 0 1rem;
+}
+
+.alert {
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="container">
+        <!-- Level Info Header -->
+        <div class="level-info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">{{ level.name }}</h4>
+                    <p class="mb-0">{{ shape_game.name }}</p>
+                </div>
+                <div class="text-end">
+                    <h5 class="mb-1">Level {{ level.level_number }}</h5>
+                    <small>Puzzle {{ level_puzzle.order_in_level }}</small>
+                </div>
+            </div>
+            
+            <!-- Progress bar could go here if you want to show level progress -->
+            <div class="game-stats">
+                <div class="stat-card">
+                    <strong id="score">0</strong>
+                    <div>Score</div>
+                </div>
+                <div class="stat-card">
+                    <strong id="timer">{{ shape_game.max_time_minutes }}:00</strong>
+                    <div>Time Left</div>
+                </div>
+                <div class="stat-card">
+                    <strong>{{ shape_game.points_per_correct }}</strong>
+                    <div>Points/Correct</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Game Board -->
+            <div class="col-lg-8">
+                <div class="game-board">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">{{ shape_game.description|default:"Complete the pattern!" }}</h5>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-hint" onclick="showHint()">
+                                <i class="fas fa-lightbulb"></i> Hint
+                            </button>
+                            <button type="button" class="btn btn-reset" onclick="resetGame()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Grid -->
+                    <div class="grid-container" id="game-grid" style="grid-template-columns: repeat({{ shape_game.grid_template.grid_size }}, 1fr);">
+                        <!-- Grid cells will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shapes Panel -->
+            <div class="col-lg-4">
+                <div class="shapes-panel">
+                    <h5 class="mb-3">Available Shapes</h5>
+                    <div class="available-shapes" id="available-shapes">
+                        {% for shape in shape_game.available_shapes.all %}
+                        <div class="shape-option" data-shape-id="{{ shape.id }}" data-shape-type="{{ shape.shape_type }}" onclick="selectShape({{ shape.id }})">
+                            <div class="shape-icon" style="color: {{ shape.color }};">
+                                {{ shape.svg_data|safe }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <p class="mb-2"><strong>Instructions:</strong></p>
+                        <p class="small text-muted">
+                            Click on a shape below, then click on an empty cell in the grid to place it. 
+                            Complete the pattern following the puzzle rules!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="text-center mt-3">
+            <a href="{{ return_url }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Back to Level
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Completion Modal -->
+<div class="completion-modal" id="completion-modal">
+    <div class="completion-content">
+        <div class="text-center">
+            <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+            <h4>Puzzle Completed!</h4>
+            <p id="completion-message">Great job! You've completed this puzzle.</p>
+            <div class="mt-3">
+                <button type="button" class="btn btn-primary" onclick="nextPuzzle()">Next Puzzle</button>
+                <button type="button" class="btn btn-secondary ms-2" onclick="backToLevel()">Back to Level</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Game state
+let gameState = {
+    selectedShape: null,
+    gridState: [],
+    score: 0,
+    timeLeft: {{ shape_game.max_time_minutes }} * 60,
+    isCompleted: false
+};
+
+// Game data from Django
+const gameData = {
+    gridTemplate: {{ shape_game.grid_template.grid_data|safe }},
+    gridSize: {{ shape_game.grid_template.grid_size }},
+    solutionData: {{ shape_game.solution_data|safe }},
+    shapeGameId: {{ shape_game.id }},
+    levelId: {{ level.id }},
+    puzzleId: {{ level_puzzle.id }},
+    pointsPerCorrect: {{ shape_game.points_per_correct }},
+    penaltyPerWrong: {{ shape_game.penalty_per_wrong }},
+    returnUrl: "{{ return_url }}"
+};
+
+// Available shapes mapping
+const shapesMap = {
+    {% for shape in shape_game.available_shapes.all %}
+    {{ shape.id }}: {
+        id: {{ shape.id }},
+        name: "{{ shape.name }}",
+        svg: `{{ shape.svg_data|safe }}`,
+        color: "{{ shape.color }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Initialize game
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGrid();
+    startTimer();
+    loadGameState();
+});
+
+function initializeGrid() {
+    const grid = document.getElementById('game-grid');
+    const gridData = gameData.gridTemplate;
+    
+    gameState.gridState = [];
+    
+    for (let row = 0; row < gameData.gridSize; row++) {
+        gameState.gridState[row] = [];
+        for (let col = 0; col < gameData.gridSize; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            const cellValue = gridData[row][col];
+            if (cellValue !== 0 && cellValue !== '?' && cellValue !== null) {
+                // Pre-filled cell
+                cell.classList.add('fixed');
+                const shape = getShapeById(cellValue);
+                if (shape) {
+                    cell.innerHTML = `<div class="shape-icon" style="color: ${shape.color};">${shape.svg}</div>`;
+                    gameState.gridState[row][col] = cellValue;
+                }
+            } else {
+                // Empty cell
+                cell.addEventListener('click', () => placeshape(row, col));
+                gameState.gridState[row][col] = 0;
+            }
+            
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function getShapeById(shapeId) {
+    return shapesMap[shapeId] || null;
+}
+
+function selectShape(shapeId) {
+    // Remove previous selection
+    document.querySelectorAll('.shape-option').forEach(el => el.classList.remove('selected'));
+    
+    // Select new shape
+    const shapeElement = document.querySelector(`[data-shape-id="${shapeId}"]`);
+    shapeElement.classList.add('selected');
+    
+    gameState.selectedShape = shapeId;
+}
+
+function placeshape(row, col) {
+    if (!gameState.selectedShape || gameState.isCompleted) return;
+    
+    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (cell.classList.contains('fixed')) return;
+    
+    // Place the shape
+    const shape = getShapeById(gameState.selectedShape);
+    cell.innerHTML = `<div class="shape-icon" style="color: ${shape.color};">${shape.svg}</div>`;
+    gameState.gridState[row][col] = gameState.selectedShape;
+    
+    // Check if placement is correct (if solution is available)
+    if (gameData.solutionData && gameData.solutionData.grid) {
+        const correctValue = gameData.solutionData.grid[row][col];
+        if (correctValue == gameState.selectedShape) {
+            cell.classList.add('correct');
+            updateScore(gameData.pointsPerCorrect);
+        } else {
+            cell.classList.add('incorrect');
+            updateScore(-gameData.penaltyPerWrong);
+            // Remove incorrect placement after animation
+            setTimeout(() => {
+                cell.innerHTML = '';
+                cell.classList.remove('incorrect');
+                gameState.gridState[row][col] = 0;
+            }, 1000);
+            return;
+        }
+    }
+    
+    // Check for completion
+    checkCompletion();
+    
+    // Clear selection
+    gameState.selectedShape = null;
+    document.querySelectorAll('.shape-option').forEach(el => el.classList.remove('selected'));
+}
+
+function updateScore(points) {
+    gameState.score += points;
+    document.getElementById('score').textContent = gameState.score;
+}
+
+function checkCompletion() {
+    // Simple completion check - no empty cells
+    let isComplete = true;
+    for (let row = 0; row < gameData.gridSize; row++) {
+        for (let col = 0; col < gameData.gridSize; col++) {
+            if (gameState.gridState[row][col] === 0) {
+                isComplete = false;
+                break;
+            }
+        }
+        if (!isComplete) break;
+    }
+    
+    if (isComplete) {
+        gameState.isCompleted = true;
+        completePuzzle();
+    }
+}
+
+function completePuzzle() {
+    // Send completion to server
+    fetch(`/api/levels/${gameData.levelId}/puzzles/${gameData.puzzleId}/complete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({
+            score: gameState.score,
+            timeUsed: ({{ shape_game.max_time_minutes }} * 60) - gameState.timeLeft,
+            completed: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('completion-message').textContent = 
+            `Congratulations! Score: ${gameState.score}`;
+        document.getElementById('completion-modal').style.display = 'flex';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Still show completion modal even if server request fails
+        document.getElementById('completion-modal').style.display = 'flex';
+    });
+}
+
+function startTimer() {
+    const timer = setInterval(() => {
+        if (gameState.timeLeft <= 0 || gameState.isCompleted) {
+            clearInterval(timer);
+            if (!gameState.isCompleted) {
+                alert('Time\'s up!');
+            }
+            return;
+        }
+        
+        gameState.timeLeft--;
+        const minutes = Math.floor(gameState.timeLeft / 60);
+        const seconds = gameState.timeLeft % 60;
+        document.getElementById('timer').textContent = 
+            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+function showHint() {
+    alert('Hint: Try to make each row and column contain each shape exactly once!');
+}
+
+function resetGame() {
+    if (confirm('Are you sure you want to reset the game?')) {
+        location.reload();
+    }
+}
+
+function nextPuzzle() {
+    // This would navigate to the next puzzle in the level
+    // For now, just go back to level
+    backToLevel();
+}
+
+function backToLevel() {
+    window.location.href = gameData.returnUrl;
+}
+
+function loadGameState() {
+    // Could load saved game state from localStorage or server
+    // For now, just start fresh
+}
+
+// Add CSRF token to all AJAX requests
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+if (csrfToken) {
+    // Token is available, add to all requests
+} else {
+    // Add a hidden CSRF token
+    const form = document.createElement('form');
+    form.innerHTML = '{% csrf_token %}';
+    document.body.appendChild(form);
+}
+</script>
+{% endblock %}
+
+<!-- Hidden CSRF token for AJAX requests -->
+{% csrf_token %}

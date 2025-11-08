@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Play Puzzle #{{ puzzle.id }} - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.game-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (max-width: 992px) {
+    .game-layout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-layout">
+    <!-- Main Game Area -->
+    <div class="main-game-area">
+        <!-- Game Header -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3>
+                        <i class="fas fa-puzzle-piece text-primary"></i>
+                        Puzzle #{{ puzzle.id }}
+                        {% if puzzle.difficulty == 'easy' %}
+                            <span class="badge bg-success">Easy</span>
+                        {% elif puzzle.difficulty == 'medium' %}
+                            <span class="badge bg-warning">Medium</span>
+                        {% elif puzzle.difficulty == 'hard' %}
+                            <span class="badge bg-danger">Hard</span>
+                        {% else %}
+                            <span class="badge bg-dark">Expert</span>
+                        {% endif %}
+                    </h3>
+                    <div class="game-actions">
+                        <a href="{% url 'games:puzzle_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Puzzles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Container -->
+        <div id="game-container" class="game-container">
+            <!-- Game will be initialized here by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <!-- Game Progress -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-line"></i> Game Progress</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">Session Status:</small><br>
+                    {% if game_session.status == 'in_progress' %}
+                        <span class="badge bg-primary">In Progress</span>
+                    {% elif game_session.status == 'completed' %}
+                        <span class="badge bg-success">Completed</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ game_session.status|title }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-2">
+                    <small class="text-muted">Current Score:</small><br>
+                    <strong>{{ game_session.score }}</strong>
+                </div>
+                
+                <div class="mb-2">
+                    <small class="text-muted">Started:</small><br>
+                    {{ game_session.start_time|timesince }} ago
+                </div>
+            </div>
+        </div>
+        
+        <!-- Region Legend -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-map"></i> Geographic Regions</h6>
+            </div>
+            <div class="card-body">
+                <div class="region-legend">
+                    {% for region in puzzle.regions_data %}
+                        <div class="region-item d-flex align-items-center mb-2">
+                            <div class="region-color region-{{ forloop.counter0 }}" style="width: 20px; height: 20px; margin-right: 10px; border-radius: 3px;"></div>
+                            <span class="small">{{ region.name }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Rules -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Game Rules</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success"></i> Fill each row with numbers 1-9</li>
+                    <li><i class="fas fa-check text-success"></i> Fill each column with numbers 1-9</li>
+                    <li><i class="fas fa-check text-success"></i> Fill each geographic region with numbers 1-9</li>
+                    <li><i class="fas fa-lightbulb text-warning"></i> Use hints sparingly for higher scores</li>
+                    <li><i class="fas fa-exclamation-triangle text-danger"></i> Avoid mistakes - only 3 allowed!</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Keyboard Shortcuts -->
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-keyboard"></i> Shortcuts</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><kbd>1-9</kbd> Place number</li>
+                    <li><kbd>Del</kbd> / <kbd>Backspace</kbd> Erase</li>
+                    <li><kbd>H</kbd> Hint</li>
+                    <li><kbd>Ctrl+Z</kbd> Undo</li>
+                    <li><kbd>Ctrl+S</kbd> Save</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<script type="application/json" id="puzzle-data">{{ puzzle_data|safe }}</script>
+<script type="application/json" id="regions-data">{{ regions_data|safe }}</script>
+<script type="application/json" id="current-state">{{ current_state|safe }}</script>
+<script type="application/json" id="game-session-id">{{ game_session.id }}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get data from hidden elements
+    const puzzleData = JSON.parse(document.getElementById('puzzle-data').textContent);
+    const regionsData = JSON.parse(document.getElementById('regions-data').textContent);
+    const currentState = JSON.parse(document.getElementById('current-state').textContent);
+    const sessionId = JSON.parse(document.getElementById('game-session-id').textContent);
+    
+    // Initialize the game
+    const game = new GeoSudokuGame(
+        'game-container',
+        puzzleData,
+        regionsData,
+        currentState
+    );
+    
+    // Set session ID for saving
+    game.gameSession = sessionId;
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey) {
+            switch(e.key) {
+                case 's':
+                    e.preventDefault();
+                    game.saveGame();
+                    break;
+                case 'z':
+                    e.preventDefault();
+                    game.undo();
+                    break;
+            }
+        } else if (e.key === 'h' || e.key === 'H') {
+            e.preventDefault();
+            game.giveHint();
+        }
+    });
+});
+</script>
+{% endblock %}

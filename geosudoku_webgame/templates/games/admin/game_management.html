@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - GeoSudoku Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .game-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .game-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .game-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .meta-item {
+        text-align: center;
+    }
+    
+    .meta-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #495057;
+    }
+    
+    .meta-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-success-custom {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-warning-custom {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        color: #212529;
+        border: none;
+    }
+    
+    .btn-danger-custom {
+        background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+        color: white;
+        border: none;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+    
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="admin-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-2">
+                <i class="fas fa-gamepad me-3"></i>{{ page_title }}
+            </h1>
+            <p class="lead mb-0">Manage shape-based puzzle games for your platform</p>
+        </div>
+        <a href="{% url 'games:visual_puzzle_creator' %}" class="btn btn-light btn-lg">
+            <i class="fas fa-magic"></i> 🎨 Visual Puzzle Creator
+        </a>
+    </div>
+</div>
+
+<!-- Quick Statistics -->
+<div class="quick-stats">
+    <div class="stat-card">
+        <div class="stat-value text-primary">{{ games.count }}</div>
+        <div class="stat-label">Total Games</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value text-success">{{ games|length }}</div>
+        <div class="stat-label">Active Games</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value text-info">0</div>
+        <div class="stat-label">Total Plays</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value text-warning">0</div>
+        <div class="stat-label">Avg Rating</div>
+    </div>
+</div>
+
+<!-- Games List -->
+{% if games %}
+    {% for game in games %}
+    <div class="game-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-2">
+                    <h4 class="mb-0 me-3">{{ game.name }}</h4>
+                    <span class="status-badge {% if game.is_active %}status-active{% else %}status-inactive{% endif %}">
+                        {% if game.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                
+                {% if game.description %}
+                <p class="text-muted mb-3">{{ game.description|truncatewords:20 }}</p>
+                {% endif %}
+                
+                <div class="game-meta">
+                    <div class="meta-item">
+                        <div class="meta-value">{{ game.grid_template.grid_size }}x{{ game.grid_template.grid_size }}</div>
+                        <div class="meta-label">Grid Size</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ game.available_shapes.count }}</div>
+                        <div class="meta-label">Shapes</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ game.max_time_minutes }}m</div>
+                        <div class="meta-label">Time Limit</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ game.grid_template.difficulty|title }}</div>
+                        <div class="meta-label">Difficulty</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ game.attempts.count }}</div>
+                        <div class="meta-label">Attempts</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-value">{{ game.calculate_max_score }}</div>
+                        <div class="meta-label">Max Score</div>
+                    </div>
+                </div>
+                
+                <small class="text-muted">
+                    <i class="fas fa-user me-1"></i>Created by {{ game.created_by.get_full_name|default:game.created_by.username }}
+                    <i class="fas fa-calendar ms-3 me-1"></i>{{ game.created_at|date:"M d, Y" }}
+                </small>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="action-buttons justify-content-end">
+                    <a href="{% url 'games:play_shape_game' game.id %}" class="btn-action btn-primary-custom">
+                        <i class="fas fa-play"></i> Test Play
+                    </a>
+                    <a href="{% url 'games:shape_game_edit' game.id %}" class="btn-action btn-warning-custom">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <button class="btn-action btn-danger-custom" onclick="confirmDelete('{{ game.name|escapejs }}', {{ game.id }})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-gamepad"></i>
+        <h3>No Shape Games Yet</h3>
+        <p class="mb-4">Create your first shape-based puzzle game to get started!</p>
+        <a href="{% url 'games:visual_puzzle_creator' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-magic"></i> 🎨 Create Your First Puzzle
+        </a>
+    </div>
+{% endif %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the game "<span id="gameName"></span>"?</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Game</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(gameName, gameId) {
+    document.getElementById('gameName').textContent = gameName;
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        // Show loading state
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        this.disabled = true;
+        
+        // Redirect to the delete confirmation page
+        window.location.href = '/manage/shape-games/' + gameId + '/delete/';
+    };
+    
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Enhanced delete functionality with AJAX
+function deleteGameAjax(gameName, gameId) {
+    if (confirm(`Are you sure you want to delete "${gameName}"?\n\nThis action cannot be undone.`)) {
+        // Create and submit a form for proper CSRF handling
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/manage/shape-games/${gameId}/delete/`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth scrolling to anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // Add loading states to action buttons
+    document.querySelectorAll('.btn-action').forEach(button => {
+        button.addEventListener('click', function() {
+            if (!this.classList.contains('btn-danger-custom')) {
+                this.style.opacity = '0.7';
+                this.style.pointerEvents = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - GeoSudoku{% endblock %}
+
+{% block extra_css %}
+<style>
+.login-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.login-card {
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.login-header {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    color: white;
+}
+
+.login-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.form-floating .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    padding: 1rem 0.75rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-floating .form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.15);
+}
+
+.form-floating > label {
+    padding: 1rem 0.75rem;
+    color: #6c757d;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(78, 115, 223, 0.3);
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(78, 115, 223, 0.4);
+}
+
+.welcome-features {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    margin-top: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.feature-icon {
+    font-size: 2rem;
+    margin-right: 1rem;
+    width: 3rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.puzzle-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    color: #6c757d;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.form-floating-password {
+    position: relative;
+}
+
+.demo-credentials {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #2196f3;
+}
+
+.stats-preview {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-8">
+                <div class="row align-items-center">
+                    <!-- Login Form -->
+                    <div class="col-lg-6">
+                        <div class="login-card">
+                            <div class="login-header">
+                                <div class="puzzle-animation mb-3">
+                                    <i class="fas fa-puzzle-piece fa-3x"></i>
+                                </div>
+                                <h2>Welcome Back!</h2>
+                                <p>Sign in to continue your GeoSudoku journey</p>
+                            </div>
+                            
+                            <div class="p-4">
+                                <!-- Demo Credentials -->
+                                <div class="demo-credentials">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-info-circle me-2"></i>Demo Accounts
+                                    </h6>
+                                    <small>
+                                        <strong>Player:</strong> demo_user / password123<br>
+                                        <strong>Admin:</strong> admin / Harsh@2004<br>
+                                        <strong>Demo Admin:</strong> demo_admin / password123
+                                    </small>
+                                </div>
+                                
+                                <form method="post" id="loginForm">
+                                    {% csrf_token %}
+                                    
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="username" 
+                                               name="username" 
+                                               placeholder="Username"
+                                               required
+                                               autocomplete="username">
+                                        <label for="username">
+                                            <i class="fas fa-user me-2"></i>Username
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-floating-password mb-4">
+                                        <div class="form-floating">
+                                            <input type="password" 
+                                                   class="form-control" 
+                                                   id="password" 
+                                                   name="password" 
+                                                   placeholder="Password"
+                                                   required
+                                                   autocomplete="current-password">
+                                            <label for="password">
+                                                <i class="fas fa-lock me-2"></i>Password
+                                            </label>
+                                        </div>
+                                        <button type="button" class="password-toggle" onclick="togglePassword()">
+                                            <i class="fas fa-eye" id="password-toggle-icon"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="d-grid mb-3">
+                                        <button type="submit" class="btn btn-login btn-lg text-white">
+                                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="text-center">
+                                        <p class="text-muted mb-2">Don't have an account?</p>
+                                        <a href="{% url 'authentication:register' %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="fas fa-user-plus me-2"></i>Create Account
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Welcome Information -->
+                    <div class="col-lg-6">
+                        <div class="welcome-features">
+                            <h3 class="mb-4 text-center">
+                                <i class="fas fa-star text-warning me-2"></i>
+                                Why Players Love GeoSudoku
+                            </h3>
+                            
+                            <div class="feature-item">
+                                <div class="feature-icon text-primary">
+                                    <i class="fas fa-shapes"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Shape-Based Gameplay</h6>
+                                    <small class="text-muted">Drag and drop geometric shapes to solve unique puzzles</small>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item">
+                                <div class="feature-icon text-success">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Mind Training</h6>
+                                    <small class="text-muted">Improve logical thinking and spatial reasoning skills</small>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item">
+                                <div class="feature-icon text-warning">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Achievements</h6>
+                                    <small class="text-muted">Unlock achievements and climb the leaderboards</small>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item">
+                                <div class="feature-icon text-info">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Progress Tracking</h6>
+                                    <small class="text-muted">Monitor your performance and improvement over time</small>
+                                </div>
+                            </div>
+                            
+                            <div class="stats-preview">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-users me-2"></i>Join Our Community
+                                </h6>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">1,200+</div>
+                                        <small>Players</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">450+</div>
+                                        <small>Puzzles</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 mb-0">8,500+</div>
+                                        <small>Games Played</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const passwordToggleIcon = document.getElementById('password-toggle-icon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordToggleIcon.classList.remove('fa-eye');
+        passwordToggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        passwordToggleIcon.classList.remove('fa-eye-slash');
+        passwordToggleIcon.classList.add('fa-eye');
+    }
+}
+
+// Demo credential auto-fill
+document.addEventListener('DOMContentLoaded', function() {
+    const demoCredentials = document.querySelector('.demo-credentials');
+    
+    if (demoCredentials) {
+        demoCredentials.addEventListener('click', function(e) {
+            if (e.target.tagName === 'STRONG') {
+                const role = e.target.textContent.toLowerCase();
+                const usernameInput = document.getElementById('username');
+                const passwordInput = document.getElementById('password');
+                
+                if (role === 'player:') {
+                    usernameInput.value = 'demo_user';
+                    passwordInput.value = 'password123';
+                } else if (role === 'admin:') {
+                    usernameInput.value = 'admin';
+                    passwordInput.value = 'Harsh@2004';
+                } else if (role === 'demo') {
+                    usernameInput.value = 'demo_admin';
+                    passwordInput.value = 'password123';
+                }
+            }
+        });
+    }
+    
+    // Add loading state to login button
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = loginForm.querySelector('button[type="submit"]');
+    
+    loginForm.addEventListener('submit', function() {
+        loginButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+        loginButton.disabled = true;
+    });
+});
+</script>
+{% endblock %}
